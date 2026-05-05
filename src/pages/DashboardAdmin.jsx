@@ -3,7 +3,6 @@ import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy 
 import { db } from '../lib/firebase';
 import { Package, AlertTriangle, TrendingDown, Truck, PlusCircle, History, Users, LogOut, LayoutDashboard, Edit, Trash2, Save, X } from 'lucide-react';
 
-// ----- COULEURS (inchangées) -----
 const NAVY = '#1a3a5c';
 const ORANGE = '#e85d24';
 const BG = '#f0f4f9';
@@ -15,7 +14,6 @@ const SUCCESS = '#16a34a';
 const SUCCESS_BG = '#dcfce7';
 const WARNING = '#d97706';
 
-// ----- STYLES (conservés) -----
 const s = {
   shell: { display: 'flex', minHeight: '100vh', background: BG, fontFamily: "'DM Sans','Segoe UI',sans-serif" },
   sidebar: { width: '230px', flexShrink: 0, background: NAVY, borderRadius: '0 24px 24px 0', display: 'flex', flexDirection: 'column', padding: '24px 14px', position: 'sticky', top: 0, height: '100vh', boxShadow: '4px 0 20px rgba(26,58,92,0.12)' },
@@ -39,11 +37,7 @@ const s = {
   th: { padding: '8px 12px', textAlign: 'left', color: MUTED, fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#f8fafc', borderBottom: `1px solid ${BORDER}` },
   td: { padding: '10px 12px', borderBottom: `1px solid ${BORDER}`, color: '#1a2332', fontSize: '13px' },
   badge: (type) => {
-    const map = {
-      ok: { bg: SUCCESS_BG, color: SUCCESS },
-      low: { bg: DANGER_BG, color: DANGER },
-      mid: { bg: '#fef3c7', color: WARNING }
-    };
+    const map = { ok: { bg: SUCCESS_BG, color: SUCCESS }, low: { bg: DANGER_BG, color: DANGER }, mid: { bg: '#fef3c7', color: WARNING } };
     const { bg, color } = map[type] || map.ok;
     return { display: 'inline-block', padding: '3px 9px', borderRadius: '20px', fontSize: '11px', fontWeight: '600', background: bg, color: color };
   },
@@ -69,7 +63,7 @@ const NAV = [
 
 export default function DashboardAdmin({ onLogout }) {
   const [tab, setTab] = useState('dashboard');
-  const [drawerOpen, setDrawerOpen] = useState(false); // RESPONSIVE
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [articles, setArticles] = useState([]);
   const [sorties, setSorties] = useState([]);
   const [plombiers, setPlombiers] = useState([]);
@@ -163,7 +157,7 @@ export default function DashboardAdmin({ onLogout }) {
   }
 
   async function deleteArticle(articleId, articleName) {
-    if (!confirm(`Supprimer d\u00e9finitivement l'article "${articleName}" ? Cette action est irr\u00e9versible.`)) return;
+    if (!confirm('Supprimer cet article ? Cette action est irr\u00e9versible.')) return;
     await deleteDoc(doc(db, 'articles', articleId));
     await loadAll();
   }
@@ -197,7 +191,7 @@ export default function DashboardAdmin({ onLogout }) {
         <div style={s.alertBanner}>
           <AlertTriangle size={18} color={DANGER} />
           <div>
-            <strong style={{ color: DANGER, fontSize: '13px' }}>{alertArts.length} article(s) en stock bas \u2014 </strong>
+            <strong style={{ color: DANGER, fontSize: '13px' }}>{alertArts.length} article(s) en stock bas — </strong>
             <span style={{ fontSize: '13px', color: DANGER }}>{alertArts.map(a => `${a.nom} (${a.quantite_stock} ${a.unite})`).join(', ')}</span>
           </div>
         </div>
@@ -207,16 +201,14 @@ export default function DashboardAdmin({ onLogout }) {
           <div style={s.cardTitle}><div style={s.cardIcon}><TrendingDown size={14} color={NAVY} /></div>Derni\u00e8res sorties</div>
         </div>
         <table style={s.table}>
-          <thead>
-            <tr><th style={s.th}>Article</th><th style={s.th}>Qt\u00e9</th><th style={s.th}>Chantier</th><th style={s.th}>Plombier</th><th style={s.th}>Date</th></tr>
-          </thead>
+          <thead><tr><th style={s.th}>Article</th><th style={s.th}>Qt\u00e9</th><th style={s.th}>Chantier</th><th style={s.th}>Plombier</th><th style={s.th}>Date</th></tr></thead>
           <tbody>
-            {loading ? <tr><td colSpan={5} style={{ ...s.td, textAlign: 'center', color: MUTED }}>Chargement\u2026</td></tr>
+            {loading ? <tr><td colSpan={5} style={{ ...s.td, textAlign: 'center', color: MUTED }}>Chargement…</td></tr>
               : sorties.length === 0 ? <tr><td colSpan={5} style={{ ...s.td, textAlign: 'center', color: MUTED }}>Aucune sortie</td></tr>
               : sorties.slice(0, 8).map(sv => (
                 <tr key={sv.id}>
                   <td style={{ ...s.td, fontWeight: '500' }}>{sv.articleNom}</td>
-                  <td style={{ ...s.td, color: DANGER, fontWeight: '700' }}>\u2212{sv.quantite}</td>
+                  <td style={{ ...s.td, color: DANGER, fontWeight: '700' }}>−{sv.quantite}</td>
                   <td style={s.td}>{sv.chantier}</td>
                   <td style={s.td}>{sv.plombierNom}</td>
                   <td style={{ ...s.td, color: MUTED }}>{sv.date}</td>
@@ -236,9 +228,7 @@ export default function DashboardAdmin({ onLogout }) {
       </div>
       <table style={s.table}>
         <thead>
-          <tr>
-            <th style={s.th}>Nom</th><th style={s.th}>R\u00e9f</th><th style={s.th}>Fournisseur</th><th style={s.th}>Qt\u00e9</th><th style={s.th}>Seuil</th><th style={s.th}>Unit\u00e9</th><th style={s.th}>Statut</th><th style={s.th}>Actions</th>
-          </tr>
+          <tr><th style={s.th}>Nom</th><th style={s.th}>R\u00e9f</th><th style={s.th}>Fournisseur</th><th style={s.th}>Qt\u00e9</th><th style={s.th}>Seuil</th><th style={s.th}>Unit\u00e9</th><th style={s.th}>Statut</th><th style={s.th}>Actions</th></tr>
         </thead>
         <tbody>
           {articles.length === 0
@@ -248,19 +238,13 @@ export default function DashboardAdmin({ onLogout }) {
               return (
                 <tr key={a.id}>
                   <td style={{ ...s.td, fontWeight: '500' }}>{a.nom}</td>
-                  <td style={{ ...s.td, color: MUTED, fontFamily: 'monospace' }}>{a.reference || '\u2014'}</td>
-                  <td style={s.td}>{a.fournisseur || '\u2014'}</td>
+                  <td style={{ ...s.td, color: MUTED, fontFamily: 'monospace' }}>{a.reference || '—'}</td>
+                  <td style={s.td}>{a.fournisseur || '—'}</td>
                   <td style={{ ...s.td, fontWeight: '700', color: type === 'low' ? DANGER : '#1a2332' }}>{a.quantite_stock}</td>
                   <td style={s.td}>
                     {editingArticleId === a.id ? (
                       <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                        <input
-                          type="number"
-                          value={editSeuil}
-                          onChange={e => setEditSeuil(e.target.value)}
-                          style={{ width: '70px', padding: '4px', borderRadius: '4px', border: `1px solid ${BORDER}` }}
-                          autoFocus
-                        />
+                        <input type="number" value={editSeuil} onChange={e => setEditSeuil(e.target.value)} style={{ width: '70px', padding: '4px', borderRadius: '4px', border: `1px solid ${BORDER}` }} autoFocus />
                         <button onClick={() => updateArticleSeuil(a.id, editSeuil)} style={s.btnIcon}><Save size={14} color={SUCCESS} /></button>
                         <button onClick={() => setEditingArticleId(null)} style={s.btnIcon}><X size={14} color={DANGER} /></button>
                       </div>
@@ -273,9 +257,7 @@ export default function DashboardAdmin({ onLogout }) {
                   </td>
                   <td style={s.td}>{a.unite}</td>
                   <td style={s.td}><span style={s.badge(type)}>{label}</span></td>
-                  <td style={s.td}>
-                    <button onClick={() => deleteArticle(a.id, a.nom)} style={{ ...s.btnIcon, color: DANGER }}><Trash2 size={16} /></button>
-                  </td>
+                  <td style={s.td}><button onClick={() => deleteArticle(a.id, a.nom)} style={{ ...s.btnIcon, color: DANGER }}><Trash2 size={16} /></button></td>
                 </tr>
               );
             })}
@@ -287,10 +269,10 @@ export default function DashboardAdmin({ onLogout }) {
           <input style={s.input} placeholder="Nom *" value={newArt.nom} onChange={e => setNewArt({ ...newArt, nom: e.target.value })} />
           <input style={s.input} placeholder="R\u00e9f\u00e9rence" value={newArt.reference} onChange={e => setNewArt({ ...newArt, reference: e.target.value })} />
           <input style={s.input} placeholder="Fournisseur" value={newArt.fournisseur} onChange={e => setNewArt({ ...newArt, fournisseur: e.target.value })} />
-          <input style={s.input} placeholder="Unit\u00e9 (m, u, kg\u2026)" value={newArt.unite} onChange={e => setNewArt({ ...newArt, unite: e.target.value })} />
+          <input style={s.input} placeholder="Unit\u00e9 (m, u, kg…)" value={newArt.unite} onChange={e => setNewArt({ ...newArt, unite: e.target.value })} />
           <input style={s.input} type="number" placeholder="Seuil alerte" value={newArt.seuil_alerte} onChange={e => setNewArt({ ...newArt, seuil_alerte: e.target.value })} />
           <button style={{ ...s.btnNavy, opacity: saving ? 0.6 : 1 }} onClick={ajouterArticle} disabled={saving}>
-            <PlusCircle size={14} /> {saving ? 'Enregistrement\u2026' : 'Ajouter'}
+            <PlusCircle size={14} /> {saving ? 'Enregistrement…' : 'Ajouter'}
           </button>
         </div>
       </div>
@@ -310,11 +292,11 @@ export default function DashboardAdmin({ onLogout }) {
         {bon.lignes.map((ligne, idx) => (
           <div key={idx} style={s.bonRow}>
             <select style={{ ...s.select, flex: 1 }} value={ligne.articleId} onChange={e => { const l = [...bon.lignes]; l[idx].articleId = e.target.value; setBon({ ...bon, lignes: l }); }}>
-              <option value="">Choisir un article\u2026</option>
+              <option value="">Choisir un article…</option>
               {articles.map(a => <option key={a.id} value={a.id}>{a.nom}</option>)}
             </select>
             <input style={{ ...s.input, width: '90px', flexShrink: 0 }} type="number" placeholder="Qt\u00e9" value={ligne.quantite} onChange={e => { const l = [...bon.lignes]; l[idx].quantite = e.target.value; setBon({ ...bon, lignes: l }); }} />
-            <button style={{ ...s.btnDanger, flexShrink: 0 }} onClick={() => setBon({ ...bon, lignes: bon.lignes.filter((_, i) => i !== idx) })}>\u2715</button>
+            <button style={{ ...s.btnDanger, flexShrink: 0 }} onClick={() => setBon({ ...bon, lignes: bon.lignes.filter((_, i) => i !== idx) })}>✕</button>
           </div>
         ))}
         <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
@@ -322,7 +304,7 @@ export default function DashboardAdmin({ onLogout }) {
             <PlusCircle size={14} /> Ajouter ligne
           </button>
           <button style={{ ...s.btnOrange, opacity: saving ? 0.6 : 1 }} onClick={validerBon} disabled={saving}>
-            <Truck size={14} /> {saving ? 'Enregistrement\u2026' : 'Valider le bon'}
+            <Truck size={14} /> {saving ? 'Enregistrement…' : 'Valider le bon'}
           </button>
         </div>
       </div>
@@ -336,15 +318,13 @@ export default function DashboardAdmin({ onLogout }) {
         <span style={{ fontSize: '12px', color: MUTED }}>{sorties.length} entr\u00e9es</span>
       </div>
       <table style={s.table}>
-        <thead>
-          <tr><th style={s.th}>Article</th><th style={s.th}>Qt\u00e9</th><th style={s.th}>Chantier</th><th style={s.th}>Plombier</th><th style={s.th}>Date</th></tr>
-        </thead>
+        <thead><tr><th style={s.th}>Article</th><th style={s.th}>Qt\u00e9</th><th style={s.th}>Chantier</th><th style={s.th}>Plombier</th><th style={s.th}>Date</th></tr></thead>
         <tbody>
           {sorties.length === 0 ? <tr><td colSpan={5} style={{ ...s.td, textAlign: 'center', color: MUTED }}>Aucune sortie</td></tr>
             : sorties.map(sv => (
               <tr key={sv.id}>
                 <td style={{ ...s.td, fontWeight: '500' }}>{sv.articleNom}</td>
-                <td style={{ ...s.td, color: DANGER, fontWeight: '700' }}>\u2212{sv.quantite}</td>
+                <td style={{ ...s.td, color: DANGER, fontWeight: '700' }}>−{sv.quantite}</td>
                 <td style={s.td}>{sv.chantier}</td>
                 <td style={s.td}>{sv.plombierNom}</td>
                 <td style={{ ...s.td, color: MUTED }}>{sv.date}</td>
@@ -358,7 +338,7 @@ export default function DashboardAdmin({ onLogout }) {
   const renderPlombiers = () => (
     <div style={s.card}>
       <div style={s.cardHead}>
-        <div style={s.cardTitle}><div style={s.cardIcon}><Users size={14} color={NAVY} /></div>\u00c9quipe</div>
+        <div style={s.cardTitle}><div style={s.cardIcon}><Users size={14} color={NAVY} /></div>Équipe</div>
         <span style={{ fontSize: '12px', color: MUTED }}>{plombiers.length} membres</span>
       </div>
       <div style={s.cardBody}>
@@ -376,9 +356,7 @@ export default function DashboardAdmin({ onLogout }) {
         </div>
       </div>
       <table style={s.table}>
-        <thead>
-          <tr><th style={s.th}>Nom</th><th style={s.th}>Email</th><th style={s.th}>R\u00f4le</th><th style={s.th}>Action</th></tr>
-        </thead>
+        <thead><tr><th style={s.th}>Nom</th><th style={s.th}>Email</th><th style={s.th}>Rôle</th><th style={s.th}>Action</th></tr></thead>
         <tbody>
           {plombiers.length === 0 ? <tr><td colSpan={4} style={{ ...s.td, textAlign: 'center', color: MUTED }}>Aucun membre</td></tr>
             : plombiers.map(p => (
@@ -392,7 +370,7 @@ export default function DashboardAdmin({ onLogout }) {
                   </select>
                 </td>
                 <td style={s.td}>
-                  <button style={s.btnDanger} onClick={() => supprimerPlombier(p.id, p.nom)}>\uD83D\uDDD1\uFE0F Supprimer</button>
+                  <button style={s.btnDanger} onClick={() => supprimerPlombier(p.id, p.nom)}>Supprimer</button>
                 </td>
               </tr>
             ))}
@@ -408,15 +386,13 @@ export default function DashboardAdmin({ onLogout }) {
         <span style={{ fontSize: '12px', color: MUTED }}>{sorties.length} mouvements</span>
       </div>
       <table style={s.table}>
-        <thead>
-          <tr><th style={s.th}>Article</th><th style={s.th}>Qt\u00e9</th><th style={s.th}>Chantier</th><th style={s.th}>Plombier</th><th style={s.th}>Date</th></tr>
-        </thead>
+        <thead><tr><th style={s.th}>Article</th><th style={s.th}>Qt\u00e9</th><th style={s.th}>Chantier</th><th style={s.th}>Plombier</th><th style={s.th}>Date</th></tr></thead>
         <tbody>
           {sorties.length === 0 ? <tr><td colSpan={5} style={{ ...s.td, textAlign: 'center', color: MUTED }}>Aucun mouvement</td></tr>
             : sorties.map(sv => (
               <tr key={sv.id}>
                 <td style={{ ...s.td, fontWeight: '500' }}>{sv.articleNom}</td>
-                <td style={{ ...s.td, color: DANGER, fontWeight: '700' }}>\u2212{sv.quantite}</td>
+                <td style={{ ...s.td, color: DANGER, fontWeight: '700' }}>−{sv.quantite}</td>
                 <td style={s.td}>{sv.chantier}</td>
                 <td style={s.td}>{sv.plombierNom}</td>
                 <td style={{ ...s.td, color: MUTED }}>{sv.date}</td>
@@ -427,7 +403,6 @@ export default function DashboardAdmin({ onLogout }) {
     </div>
   );
 
-  // Contenu sidebar (partagé desktop + drawer mobile)
   const sidebarContent = (
     <>
       <div style={s.logoWrap}>
@@ -463,23 +438,10 @@ export default function DashboardAdmin({ onLogout }) {
           .adm-drawer  { display: none !important; }
           .adm-overlay { display: none !important; }
         }
-        .adm-topbar {
-          background: #1a3a5c; padding: 14px 16px;
-          align-items: center; justify-content: space-between;
-          position: sticky; top: 0; z-index: 100;
-        }
-        .adm-drawer {
-          position: fixed; top: 0; left: 0; bottom: 0; width: 260px;
-          background: #1a3a5c; z-index: 200;
-          transform: translateX(-100%); transition: transform .25s;
-          display: flex; flex-direction: column;
-          padding: 24px 14px; overflow-y: auto;
-        }
+        .adm-topbar { background: #1a3a5c; padding: 14px 16px; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+        .adm-drawer { position: fixed; top: 0; left: 0; bottom: 0; width: 260px; background: #1a3a5c; z-index: 200; transform: translateX(-100%); transition: transform .25s; display: flex; flex-direction: column; padding: 24px 14px; overflow-y: auto; }
         .adm-drawer.open { transform: translateX(0); }
-        .adm-overlay {
-          position: fixed; inset: 0;
-          background: rgba(0,0,0,.4); z-index: 190; display: none;
-        }
+        .adm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 190; display: none; }
         .adm-overlay.open { display: block; }
       `}</style>
 
@@ -488,15 +450,8 @@ export default function DashboardAdmin({ onLogout }) {
 
       <div style={s.shell}>
         <div className="adm-topbar" style={{ display: 'none' }}>
-          <span style={{ color: '#fff', fontSize: '14px', fontWeight: '700' }}>
-            SOS Stock \u2014 {NAV.find(n => n.id === tab)?.label}
-          </span>
-          <button
-            onClick={() => setDrawerOpen(true)}
-            style={{ background: 'rgba(255,255,255,.15)', color: '#fff', border: 'none', borderRadius: '8px', padding: '7px 12px', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}
-          >
-            \u2630
-          </button>
+          <span style={{ color: '#fff', fontSize: '14px', fontWeight: '700' }}>SOS Stock — {NAV.find(n => n.id === tab)?.label}</span>
+          <button onClick={() => setDrawerOpen(true)} style={{ background: 'rgba(255,255,255,.15)', color: '#fff', border: 'none', borderRadius: '8px', padding: '7px 12px', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>☰</button>
         </div>
 
         <aside className="adm-sidebar" style={s.sidebar}>{sidebarContent}</aside>
