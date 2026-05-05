@@ -429,9 +429,14 @@ export default function DashboardAdmin({ onLogout }) {
       <style>{`
         @media (max-width: 900px) {
           .adm-sidebar { display: none !important; }
+          .adm-shell { display: block !important; }
           .adm-topbar  { display: flex !important; }
           .adm-main    { padding: 16px !important; }
           .adm-stats   { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+        }
+
+        @media (max-width: 900px) {
+          .adm-shell { display: block !important; }
         }
         @media (min-width: 901px) {
           .adm-topbar  { display: none !important; }
@@ -443,7 +448,9 @@ export default function DashboardAdmin({ onLogout }) {
         .adm-drawer.open { transform: translateX(0); }
         .adm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 190; display: none; }
         .adm-overlay.open { display: block; }
-      `}</style>
+      `}
+      
+      </style>
 
       <div className={`adm-overlay${drawerOpen ? ' open' : ''}`} onClick={() => setDrawerOpen(false)} />
       <div className={`adm-drawer${drawerOpen ? ' open' : ''}`}>{sidebarContent}</div>
@@ -454,7 +461,7 @@ export default function DashboardAdmin({ onLogout }) {
           <button onClick={() => setDrawerOpen(true)} style={{ background: 'rgba(255,255,255,.15)', color: '#fff', border: 'none', borderRadius: '8px', padding: '7px 12px', cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>☰</button>
         </div>
 
-        <aside className="adm-sidebar" style={s.sidebar}>{sidebarContent}</aside>
+<aside className="adm-sidebar" style={{ ...s.sidebar, display: 'flex' }}>{sidebarContent}</aside>
 
         <main style={s.main} className="adm-main">
           <div style={{ marginBottom: '24px' }}>
