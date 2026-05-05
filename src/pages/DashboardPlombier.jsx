@@ -15,16 +15,91 @@ const SUCCESS = '#16a34a';
 const SUCCESS_BG = '#dcfce7';
 const WARNING = '#d97706';
 
+// ----- RESPONSIVE HOOK -----
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return isMobile;
+};
+
 // ----- STYLES -----
 const s = {
-  shell: { display: 'flex', minHeight: '100vh', background: BG, fontFamily: "'DM Sans','Segoe UI',sans-serif" },
-  sidebar: { width: '230px', flexShrink: 0, background: NAVY, borderRadius: '0 24px 24px 0', display: 'flex', flexDirection: 'column', padding: '24px 14px', position: 'sticky', top: 0, height: '100vh', boxShadow: '4px 0 20px rgba(26,58,92,0.12)' },
-  logoWrap: { padding: '0 8px 22px', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '16px' },
-  navBtn: (active) => ({ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 12px', borderRadius: '12px', marginBottom: '4px', cursor: 'pointer', border: 'none', background: active ? 'rgba(255,255,255,0.13)' : 'transparent', color: active ? '#fff' : 'rgba(255,255,255,0.55)', fontSize: '13px', fontWeight: active ? '600' : '400', textAlign: 'left' }),
-  main: { flex: 1, padding: '28px 32px', minWidth: 0 },
+  shell: (isMobile) => ({
+    display: 'flex',
+    flexDirection: isMobile ? 'column' : 'row',
+    minHeight: '100vh',
+    background: BG,
+    fontFamily: "'DM Sans','Segoe UI',sans-serif",
+  }),
+  sidebar: (isMobile) => ({
+    width: isMobile ? '100%' : '230px',
+    flexShrink: 0,
+    background: NAVY,
+    borderRadius: isMobile ? '0 0 20px 20px' : '0 24px 24px 0',
+    display: 'flex',
+    flexDirection: isMobile ? 'row' : 'column',
+    alignItems: isMobile ? 'center' : 'stretch',
+    padding: isMobile ? '10px 14px' : '24px 14px',
+    position: isMobile ? 'relative' : 'sticky',
+    top: 0,
+    height: isMobile ? 'auto' : '100vh',
+    boxShadow: isMobile
+      ? '0 4px 20px rgba(26,58,92,0.12)'
+      : '4px 0 20px rgba(26,58,92,0.12)',
+    zIndex: 10,
+  }),
+  logoWrap: (isMobile) => ({
+    padding: isMobile ? '0 12px 0 0' : '0 8px 22px',
+    borderBottom: isMobile ? 'none' : '1px solid rgba(255,255,255,0.1)',
+    borderRight: isMobile ? '1px solid rgba(255,255,255,0.1)' : 'none',
+    marginBottom: isMobile ? 0 : '16px',
+    marginRight: isMobile ? '12px' : 0,
+    display: 'flex',
+    alignItems: 'center',
+  }),
+  nav: (isMobile) => ({
+    flex: 1,
+    display: 'flex',
+    flexDirection: isMobile ? 'row' : 'column',
+    gap: isMobile ? '6px' : 0,
+    alignItems: isMobile ? 'center' : 'stretch',
+  }),
+  navBtn: (active, isMobile) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    width: isMobile ? 'auto' : '100%',
+    padding: isMobile ? '8px 12px' : '10px 12px',
+    borderRadius: '12px',
+    marginBottom: isMobile ? 0 : '4px',
+    cursor: 'pointer',
+    border: 'none',
+    background: active ? 'rgba(255,255,255,0.13)' : 'transparent',
+    color: active ? '#fff' : 'rgba(255,255,255,0.55)',
+    fontSize: '13px',
+    fontWeight: active ? '600' : '400',
+    textAlign: 'left',
+    whiteSpace: 'nowrap',
+  }),
+  main: (isMobile) => ({
+    flex: 1,
+    padding: isMobile ? '18px 14px' : '28px 32px',
+    minWidth: 0,
+  }),
   pageTitle: { fontSize: '22px', fontWeight: '700', color: '#1a2332', margin: '0 0 4px' },
   pageSub: { fontSize: '13px', color: MUTED, margin: '0 0 24px' },
-  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px', marginBottom: '20px' },
+  statsGrid: (isMobile) => ({
+    display: 'grid',
+    gridTemplateColumns: isMobile ? 'repeat(3,1fr)' : 'repeat(3,1fr)',
+    gap: isMobile ? '10px' : '16px',
+    marginBottom: '20px',
+  }),
   stat: { background: '#fff', borderRadius: '16px', border: `1px solid ${BORDER}`, padding: '20px', position: 'relative', overflow: 'hidden' },
   statAccent: (c) => ({ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: c }),
   statVal: { fontSize: '28px', fontWeight: '700', color: '#1a2332', lineHeight: 1, marginBottom: '4px' },
@@ -50,10 +125,24 @@ const s = {
     const { bg, color } = map[type] || map.ok;
     return { display: 'inline-block', padding: '3px 9px', borderRadius: '20px', fontSize: '11px', fontWeight: '600', background: bg, color: color };
   },
-  logoutBtn: { background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' },
+  logoutBtn: (isMobile) => ({
+    background: 'rgba(255,255,255,0.15)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '6px 12px',
+    fontSize: '12px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
+    marginLeft: isMobile ? 'auto' : 0,
+  }),
+  tableWrapper: { overflowX: 'auto' },
 };
 
 export default function DashboardPlombier({ onLogout }) {
+  const isMobile = useIsMobile();
   const [plombier, setPlombier] = useState(null);
   const [articles, setArticles] = useState([]);
   const [sorties, setSorties] = useState([]);
@@ -71,7 +160,7 @@ export default function DashboardPlombier({ onLogout }) {
         const docSnap = snap.docs[0];
         setPlombier({ id: docSnap.id, ...docSnap.data() });
       } else {
-        setError('Aucun plombier trouvé. Veuillez en créer un dans l’onglet Plombiers (admin).');
+        setError('Aucun plombier trouvé. Veuillez en créer un dans l'onglet Plombiers (admin).');
       }
     };
     fetchPlombier();
@@ -154,25 +243,25 @@ export default function DashboardPlombier({ onLogout }) {
   const initiales = plombier.nom.split(' ').map(n => n[0]).join('').toUpperCase();
 
   return (
-    <div style={s.shell}>
-      <aside style={s.sidebar}>
-        <div style={s.logoWrap}>
+    <div style={s.shell(isMobile)}>
+      <aside style={s.sidebar(isMobile)}>
+        <div style={s.logoWrap(isMobile)}>
           <img src="https://sosfuitedeau.com/wp-content/uploads/2026/04/logo-removebg-preview.png" alt="Logo" style={{ height: '34px', objectFit: 'contain' }} />
         </div>
-        <nav style={{ flex: 1 }}>
-          <button style={s.navBtn(activeView === 'espace')} onClick={() => setActiveView('espace')}>
+        <nav style={s.nav(isMobile)}>
+          <button style={s.navBtn(activeView === 'espace', isMobile)} onClick={() => setActiveView('espace')}>
             <TrendingDown size={16} /> Mon espace
           </button>
-          <button style={s.navBtn(activeView === 'stock')} onClick={() => setActiveView('stock')}>
+          <button style={s.navBtn(activeView === 'stock', isMobile)} onClick={() => setActiveView('stock')}>
             <Package size={16} /> Stock
           </button>
         </nav>
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '14px' }}>
-          <button style={s.logoutBtn} onClick={onLogout}><LogOut size={13} /> Changer de profil</button>
+        <div style={{ borderTop: isMobile ? 'none' : '1px solid rgba(255,255,255,0.1)', borderLeft: isMobile ? '1px solid rgba(255,255,255,0.1)' : 'none', paddingTop: isMobile ? 0 : '14px', paddingLeft: isMobile ? '12px' : 0, marginLeft: isMobile ? '8px' : 0 }}>
+          <button style={s.logoutBtn(isMobile)} onClick={onLogout}><LogOut size={13} /> Changer de profil</button>
         </div>
       </aside>
 
-      <main style={s.main}>
+      <main style={s.main(isMobile)}>
         <div style={{ marginBottom: '24px' }}>
           <h1 style={s.pageTitle}>Bonjour {plombier.nom}</h1>
           <p style={s.pageSub}>{activeView === 'espace' ? 'Déclarez vos utilisations et consultez votre historique' : 'Consultez le stock disponible'}</p>
@@ -180,7 +269,7 @@ export default function DashboardPlombier({ onLogout }) {
 
         {/* Cartes KPI (uniquement dans "Mon espace") */}
         {activeView === 'espace' && (
-          <div style={s.statsGrid}>
+          <div style={s.statsGrid(isMobile)}>
             <div style={s.stat}>
               <div style={s.statAccent(NAVY)} />
               <div style={s.statVal}>{articles.length}</div>
@@ -241,27 +330,29 @@ export default function DashboardPlombier({ onLogout }) {
                 <div style={s.cardIcon}><TrendingDown size={14} color={NAVY} /></div>
                 <span style={s.cardTitle}>Mes dernières sorties</span>
               </div>
-              <table style={s.table}>
-                <thead>
-                  <tr><th style={s.th}>Article</th><th style={s.th}>Qté</th><th style={s.th}>Chantier</th><th style={s.th}>Date</th></tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr><td colSpan="4" style={s.td}>Chargement…</td></tr>
-                  ) : sorties.length === 0 ? (
-                    <tr><td colSpan="4" style={{ ...s.td, textAlign: 'center' }}>Aucune sortie</td></tr>
-                  ) : (
-                    sorties.map(s => (
-                      <tr key={s.id}>
-                        <td style={s.td}>{s.articleNom}</td>
-                        <td style={{ ...s.td, color: DANGER, fontWeight: '700' }}>-{s.quantite}</td>
-                        <td style={s.td}>{s.chantier}</td>
-                        <td style={s.td}>{s.date}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+              <div style={s.tableWrapper}>
+                <table style={s.table}>
+                  <thead>
+                    <tr><th style={s.th}>Article</th><th style={s.th}>Qté</th><th style={s.th}>Chantier</th><th style={s.th}>Date</th></tr>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr><td colSpan="4" style={s.td}>Chargement…</td></tr>
+                    ) : sorties.length === 0 ? (
+                      <tr><td colSpan="4" style={{ ...s.td, textAlign: 'center' }}>Aucune sortie</td></tr>
+                    ) : (
+                      sorties.map(s => (
+                        <tr key={s.id}>
+                          <td style={s.td}>{s.articleNom}</td>
+                          <td style={{ ...s.td, color: DANGER, fontWeight: '700' }}>-{s.quantite}</td>
+                          <td style={s.td}>{s.chantier}</td>
+                          <td style={s.td}>{s.date}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </>
         )}
@@ -278,26 +369,28 @@ export default function DashboardPlombier({ onLogout }) {
                 </span>
               )}
             </div>
-            <table style={s.table}>
-              <thead>
-                <tr><th style={s.th}>Article</th><th style={s.th}>Réf</th><th style={s.th}>Stock</th><th style={s.th}>Unité</th><th style={s.th}>Statut</th></tr>
-              </thead>
-              <tbody>
-                {articles.map(a => {
-                  const type = a.quantite_stock <= a.seuil_alerte ? 'low' : (a.quantite_stock <= a.seuil_alerte * 2 ? 'mid' : 'ok');
-                  const label = { ok: 'OK', mid: 'Moyen', low: 'Stock bas' }[type];
-                  return (
-                    <tr key={a.id}>
-                      <td style={{ ...s.td, fontWeight: '500' }}>{a.nom}</td>
-                      <td style={s.td}>{a.reference || '—'}</td>
-                      <td style={{ ...s.td, fontWeight: '700', color: type === 'low' ? DANGER : '#1a2332' }}>{a.quantite_stock}</td>
-                      <td style={s.td}>{a.unite}</td>
-                      <td style={s.td}><span style={s.badge(type)}>{label}</span></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div style={s.tableWrapper}>
+              <table style={s.table}>
+                <thead>
+                  <tr><th style={s.th}>Article</th><th style={s.th}>Réf</th><th style={s.th}>Stock</th><th style={s.th}>Unité</th><th style={s.th}>Statut</th></tr>
+                </thead>
+                <tbody>
+                  {articles.map(a => {
+                    const type = a.quantite_stock <= a.seuil_alerte ? 'low' : (a.quantite_stock <= a.seuil_alerte * 2 ? 'mid' : 'ok');
+                    const label = { ok: 'OK', mid: 'Moyen', low: 'Stock bas' }[type];
+                    return (
+                      <tr key={a.id}>
+                        <td style={{ ...s.td, fontWeight: '500' }}>{a.nom}</td>
+                        <td style={s.td}>{a.reference || '—'}</td>
+                        <td style={{ ...s.td, fontWeight: '700', color: type === 'low' ? DANGER : '#1a2332' }}>{a.quantite_stock}</td>
+                        <td style={s.td}>{a.unite}</td>
+                        <td style={s.td}><span style={s.badge(type)}>{label}</span></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </main>
