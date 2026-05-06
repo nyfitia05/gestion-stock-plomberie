@@ -79,7 +79,6 @@ export default function DashboardAdmin({ onLogout }) {
   const [bons, setBons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newArt, setNewArt] = useState({ nom: '', reference: '', fournisseur: '', unite: 'Unité', seuil_alerte: 5, quantite_stock: 0 });  
-  const [bon, setBon] = useState({ fournisseur: '', reference_bon: '', lignes: [] });
   const [newPlombier, setNewPlombier] = useState({ nom: '', email: '', role: 'plombier' });
   const [saving, setSaving] = useState(false);
   const [editingArticleId, setEditingArticleId] = useState(null);
@@ -115,10 +114,12 @@ export default function DashboardAdmin({ onLogout }) {
 async function ajouterArticle() {
   if (!newArt.nom) return alert('Nom requis');
   setSaving(true);
+  const dateAjout = new Date().toLocaleDateString('fr-FR');
   await addDoc(collection(db, 'articles'), {
     ...newArt,
     quantite_stock: Number(newArt.quantite_stock) || 0,
-    seuil_alerte: Number(newArt.seuil_alerte),
+    seuil_alerte: Number(newArt.seuil_alerte) || 5,
+    derniere_commande: dateAjout, // ← date d'insertion automatique
   });
   setNewArt({ nom: '', reference: '', fournisseur: '', unite: 'Unité', seuil_alerte: 5, quantite_stock: 0 });
   await loadAll();
@@ -127,36 +128,16 @@ async function ajouterArticle() {
 
 async function updateArticleQuantite(articleId, newQty) {
   if (isNaN(newQty) || newQty < 0) return;
-  await updateDoc(doc(db, 'articles', articleId), { quantite_stock: Number(newQty) });
+  await updateDoc(doc(db, 'articles', articleId), {
+    quantite_stock: Number(newQty),
+    derniere_commande: new Date().toLocaleDateString('fr-FR'), // ← date du dernier update
+  });
   await loadAll();
   setEditingArticleId(null);
 }
 
-  // MODIFIÉ : enregistre aussi la date de commande sur chaque article
-  async function validerBon() {
-    if (!bon.fournisseur || bon.lignes.length === 0) return alert('Fournisseur et au moins une ligne requis');
-    setSaving(true);
-    const dateCommande = new Date().toLocaleDateString('fr-FR');
-    await addDoc(collection(db, 'bons_commande'), {
-      fournisseur: bon.fournisseur,
-      reference_bon: bon.reference_bon,
-      date: dateCommande,
-      lignes: bon.lignes,
-    });
-    for (const ligne of bon.lignes) {
-      if (!ligne.articleId || !ligne.quantite) continue;
-      const article = articles.find(a => a.id === ligne.articleId);
-      if (!article) continue;
-      await updateDoc(doc(db, 'articles', ligne.articleId), {
-        quantite_stock: article.quantite_stock + Number(ligne.quantite),
-        derniere_commande: dateCommande,
-      });
-    }
-    setBon({ fournisseur: '', reference_bon: '', lignes: [] });
-    await loadAll();
-    setSaving(false);
-    alert('Bon enregistré — stock mis à jour ✓');
-  }
+
+
 
   async function ajouterPlombier() {
     if (!newPlombier.nom || !newPlombier.email) return alert('Nom et email requis');
@@ -505,24 +486,78 @@ const renderCommandes = () => (
     </div>
   );
 
-  const renderHistorique = () => (
+const renderHistorique = () => {
+  // On fusionne sorties + bons en une seule liste
+  const mouvements = [
+    ...sorties.map(s => ({
+      id: 'sortie-' + s.id,
+      type: 'sortie',
+      article: s.articleNom,
+      quantite: s.quantite,
+      detail: s.chantier,
+      acteur: s.plombierNom,
+      date: s.date,
+    })),
+    ...bons.map(b => ({
+      id: 'bon-' + b.id,
+      type: 'reception',
+      article: b.lignes?.map(l => {
+        const art = articles.find(a => a.id === l.articleId);
+        return `${art?.nom || l.articleId} (×${l.quantite})`;
+      }).join(', ') || '—',
+      quantite: b.lignes?.reduce((sum, l) => sum + Number(l.quantite || 0), 0),
+      detail: b.reference_bon || '—',
+      acteur: b.fournisseur,
+      date: b.date,
+    })),
+  ].sort((a, b) => {
+    // Tri par date décroissante (format dd/mm/yyyy)
+    const parse = d => {
+      if (!d) return 0;
+      const [day, month, year] = d.split('/');
+      return new Date(year, month - 1, day).getTime();
+    };
+    return parse(b.date) - parse(a.date);
+  });
+
+  return (
     <div style={baseStyles.card}>
       <div style={baseStyles.cardHead}>
-        <div style={baseStyles.cardTitle}><div style={baseStyles.cardIcon}><History size={14} color={NAVY} /></div>Historique complet</div>
-        <span style={{ fontSize: '12px', color: MUTED }}>{sorties.length} mouvements</span>
+        <div style={baseStyles.cardTitle}>
+          <div style={baseStyles.cardIcon}><History size={14} color={NAVY} /></div>
+          Historique complet
+        </div>
+        <span style={{ fontSize: '12px', color: MUTED }}>{mouvements.length} mouvements</span>
       </div>
       <div style={baseStyles.tableWrapper}>
         <table style={baseStyles.table}>
-          <thead><tr><th style={baseStyles.th}>Article</th><th style={baseStyles.th}>Qté</th><th style={baseStyles.th}>Chantier</th><th style={baseStyles.th}>Plombier</th><th style={baseStyles.th}>Date</th></tr></thead>
+          <thead>
+            <tr>
+              <th style={baseStyles.th}>Type</th>
+              <th style={baseStyles.th}>Article(s)</th>
+              <th style={baseStyles.th}>Qté</th>
+              <th style={baseStyles.th}>Réf / Chantier</th>
+              <th style={baseStyles.th}>Fournisseur / Plombier</th>
+              <th style={baseStyles.th}>Date</th>
+            </tr>
+          </thead>
           <tbody>
-            {sorties.length === 0 ? <tr><td colSpan={5} style={{ ...baseStyles.td, textAlign: 'center', color: MUTED }}>Aucun mouvement</td></tr>
-              : sorties.map(sv => (
-                <tr key={sv.id}>
-                  <td style={{ ...baseStyles.td, fontWeight: '500' }}>{sv.articleNom}</td>
-                  <td style={{ ...baseStyles.td, color: DANGER, fontWeight: '700' }}>−{sv.quantite}</td>
-                  <td style={baseStyles.td}>{sv.chantier}</td>
-                  <td style={baseStyles.td}>{sv.plombierNom}</td>
-                  <td style={{ ...baseStyles.td, color: MUTED }}>{sv.date}</td>
+            {mouvements.length === 0
+              ? <tr><td colSpan={6} style={{ ...baseStyles.td, textAlign: 'center', color: MUTED }}>Aucun mouvement</td></tr>
+              : mouvements.map(m => (
+                <tr key={m.id}>
+                  <td style={baseStyles.td}>
+                    {m.type === 'sortie'
+                      ? <span style={baseStyles.badge('low')}>Sortie</span>
+                      : <span style={baseStyles.badge('ok')}>Réception</span>}
+                  </td>
+                  <td style={{ ...baseStyles.td, fontWeight: '500', maxWidth: '200px' }}>{m.article}</td>
+                  <td style={{ ...baseStyles.td, fontWeight: '700', color: m.type === 'sortie' ? DANGER : SUCCESS }}>
+                    {m.type === 'sortie' ? `−${m.quantite}` : `+${m.quantite}`}
+                  </td>
+                  <td style={baseStyles.td}>{m.detail}</td>
+                  <td style={baseStyles.td}>{m.acteur}</td>
+                  <td style={{ ...baseStyles.td, color: MUTED }}>{m.date}</td>
                 </tr>
               ))}
           </tbody>
@@ -530,6 +565,7 @@ const renderCommandes = () => (
       </div>
     </div>
   );
+};
 
   return (
     <>
