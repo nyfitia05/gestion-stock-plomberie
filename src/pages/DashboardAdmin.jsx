@@ -277,7 +277,7 @@ export default function DashboardAdmin({ onLogout }) {
               <th style={baseStyles.th}>Qté</th>
               <th style={baseStyles.th}>Seuil</th>
               <th style={baseStyles.th}>Unité</th>
-              <th style={baseStyles.th}>Stavffvtut</th>
+              <th style={baseStyles.th}>Statut</th>
               <th style={baseStyles.th}>Dernière commande</th>
               <th style={baseStyles.th}>Actions</th>
             </tr>
