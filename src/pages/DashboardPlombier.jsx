@@ -380,7 +380,7 @@ export default function DashboardPlombier({ onLogout }) {
         </div>
         <nav style={s.nav(isMobile)}>
           <button style={s.navBtn(activeView === 'espace', isMobile)} onClick={() => setActiveView('espace')}>
-            <TrendingDown size={16} /> Mon espace
+            <TrendingDown size={16} /> Mon ebgvfrspace
           </button>
           <button style={s.navBtn(activeView === 'stock', isMobile)} onClick={() => setActiveView('stock')}>
             <Package size={16} /> Stock
