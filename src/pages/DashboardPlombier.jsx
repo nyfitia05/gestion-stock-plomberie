@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { collection, getDocs, addDoc, updateDoc, doc, query, where } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, doc, query, where, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Package, TrendingDown, PlusCircle, AlertTriangle, LogOut } from 'lucide-react';
+import { Package, TrendingDown, PlusCircle, AlertTriangle, LogOut, Users, LogIn } from 'lucide-react';
 
 // ----- COULEURS (identiques à l'admin) -----
 const NAVY = '#1a3a5c';
@@ -139,34 +139,99 @@ const s = {
     marginLeft: isMobile ? 'auto' : 0,
   }),
   tableWrapper: { overflowX: 'auto' },
+  selectorContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: '100vh',
+    background: BG,
+    fontFamily: "'DM Sans','Segoe UI',sans-serif",
+    padding: '20px'
+  },
+  selectorCard: {
+    background: '#fff',
+    borderRadius: '24px',
+    boxShadow: '0 8px 30px rgba(0,0,0,0.05)',
+    padding: '28px 24px',
+    maxWidth: '500px',
+    width: '100%',
+    border: `1px solid ${BORDER}`
+  },
+  selectorButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '14px',
+    background: '#fff',
+    border: `1px solid ${BORDER}`,
+    borderRadius: '16px',
+    padding: '16px 18px',
+    width: '100%',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    textAlign: 'left',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+  },
 };
 
 export default function DashboardPlombier({ onLogout }) {
   const isMobile = useIsMobile();
+  // Gestion de l'ID du plombier connecté (stocké dans localStorage)
+  const [selectedPlombierId, setSelectedPlombierId] = useState(() => {
+    return localStorage.getItem('plombierId') || null;
+  });
   const [plombier, setPlombier] = useState(null);
+  const [plombiersList, setPlombiersList] = useState([]);
   const [articles, setArticles] = useState([]);
   const [sorties, setSorties] = useState([]);
   const [form, setForm] = useState({ articleId: '', quantite: 1, chantier: '' });
   const [loading, setLoading] = useState(true);
+  const [loadingList, setLoadingList] = useState(false);
   const [error, setError] = useState('');
-  const [activeView, setActiveView] = useState('espace'); // 'espace' ou 'stock'
+  const [activeView, setActiveView] = useState('espace');
 
-  // Charger le premier plombier (avec rôle 'plombier')
+  // 1. Charger la liste des plombiers (pour l'écran de sélection)
   useEffect(() => {
+    if (selectedPlombierId) return; // déjà connecté
+    const fetchPlombiersList = async () => {
+      setLoadingList(true);
+      try {
+        const q = query(collection(db, 'plombiers'), where('role', '==', 'plombier'));
+        const snap = await getDocs(q);
+        const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setPlombiersList(list);
+      } catch (err) {
+        setError('Erreur chargement plombiers : ' + err.message);
+      }
+      setLoadingList(false);
+    };
+    fetchPlombiersList();
+  }, [selectedPlombierId]);
+
+  // 2. Charger le plombier sélectionné par son ID
+  useEffect(() => {
+    if (!selectedPlombierId) {
+      setPlombier(null);
+      return;
+    }
     const fetchPlombier = async () => {
-      const q = query(collection(db, 'plombiers'), where('role', '==', 'plombier'));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        const docSnap = snap.docs[0];
-        setPlombier({ id: docSnap.id, ...docSnap.data() });
-      } else {
-        setError('Aucun plombier trouvé. Veuillez en créer un dans l'onglet Plombiers (admin).');
+      try {
+        const docRef = doc(db, 'plombiers', selectedPlombierId);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          setPlombier({ id: snap.id, ...snap.data() });
+        } else {
+          setError('Plombier introuvable.');
+          localStorage.removeItem('plombierId');
+          setSelectedPlombierId(null);
+        }
+      } catch (err) {
+        setError('Erreur chargement profil : ' + err.message);
       }
     };
     fetchPlombier();
-  }, []);
+  }, [selectedPlombierId]);
 
-  // Charger les articles et les sorties (sans orderBy pour éviter index Firebase)
+  // 3. Charger les articles et les sorties propres au plombier (si plombier existe)
   useEffect(() => {
     if (!plombier) return;
     const loadData = async () => {
@@ -178,7 +243,7 @@ export default function DashboardPlombier({ onLogout }) {
         articlesData.sort((a, b) => (a.nom || '').localeCompare(b.nom));
         setArticles(articlesData);
 
-        // Sorties du plombier (sans orderBy, tri manuel)
+        // Sorties du plombier
         const sortiesSnap = await getDocs(query(collection(db, 'sorties'), where('plombierId', '==', plombier.id)));
         let sortiesData = sortiesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         sortiesData.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -205,7 +270,6 @@ export default function DashboardPlombier({ onLogout }) {
       return;
     }
     try {
-      // Ajouter la sortie
       await addDoc(collection(db, 'sorties'), {
         articleId: form.articleId,
         articleNom: article.nom,
@@ -215,11 +279,10 @@ export default function DashboardPlombier({ onLogout }) {
         plombierNom: plombier.nom,
         date: new Date().toLocaleDateString('fr-FR'),
       });
-      // Mettre à jour le stock
       await updateDoc(doc(db, 'articles', form.articleId), {
         quantite_stock: article.quantite_stock - Number(form.quantite),
       });
-      // Recharger les données
+      // Recharger
       const articlesSnap = await getDocs(query(collection(db, 'articles')));
       let articlesData = articlesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       articlesData.sort((a, b) => (a.nom || '').localeCompare(b.nom));
@@ -236,11 +299,78 @@ export default function DashboardPlombier({ onLogout }) {
     }
   };
 
+  const handleSelectPlombier = (id) => {
+    localStorage.setItem('plombierId', id);
+    setSelectedPlombierId(id);
+    setError('');
+  };
+
+  const handleLogoutClick = () => {
+    localStorage.removeItem('plombierId');
+    setSelectedPlombierId(null);
+    setPlombier(null);
+    setSorties([]);
+    setForm({ articleId: '', quantite: 1, chantier: '' });
+    if (onLogout) onLogout(); // appel au parent si besoin
+  };
+
+  // Écran de sélection des plombiers
+  if (!selectedPlombierId) {
+    return (
+      <div style={s.selectorContainer}>
+        <div style={s.selectorCard}>
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+            <img src="https://sosfuitedeau.com/wp-content/uploads/2026/04/logo-removebg-preview.png" alt="Logo" style={{ height: '50px', marginBottom: '16px' }} />
+            <h2 style={{ fontSize: '20px', fontWeight: '600', margin: '0 0 6px', color: '#1a2332' }}>Choisissez votre profil</h2>
+            <p style={{ fontSize: '13px', color: '#7a8a9a', margin: 0 }}>Sélectionnez votre nom pour accéder à votre espace</p>
+          </div>
+          {loadingList ? (
+            <div style={{ textAlign: 'center', padding: '20px', color: NAVY }}>Chargement des plombiers...</div>
+          ) : plombiersList.length === 0 ? (
+            <div style={{ textAlign: 'center', color: DANGER, padding: '20px' }}>
+              Aucun plombier trouvé. Veuillez en créer un dans l'onglet Plombiers (admin).
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {plombiersList.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => handleSelectPlombier(p.id)}
+                  style={s.selectorButton}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = NAVY}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = BORDER}
+                >
+                  <div style={{
+                    background: '#e8f0f8',
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '30px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: NAVY
+                  }}>
+                    <Users size={24} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '600', fontSize: '16px', color: '#1a2332' }}>{p.nom}</div>
+                    <div style={{ fontSize: '12px', color: '#7a8a9a' }}>{p.email}</div>
+                  </div>
+                  <LogIn size={18} color={NAVY} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Dashboard du plombier connecté
   if (error && !plombier) return <div style={{ padding: '40px', color: DANGER }}>{error}</div>;
   if (!plombier) return <div style={{ padding: '40px' }}>Chargement du profil...</div>;
 
   const stockBas = articles.filter(a => a.quantite_stock <= a.seuil_alerte);
-  const initiales = plombier.nom.split(' ').map(n => n[0]).join('').toUpperCase();
 
   return (
     <div style={s.shell(isMobile)}>
@@ -257,7 +387,7 @@ export default function DashboardPlombier({ onLogout }) {
           </button>
         </nav>
         <div style={{ borderTop: isMobile ? 'none' : '1px solid rgba(255,255,255,0.1)', borderLeft: isMobile ? '1px solid rgba(255,255,255,0.1)' : 'none', paddingTop: isMobile ? 0 : '14px', paddingLeft: isMobile ? '12px' : 0, marginLeft: isMobile ? '8px' : 0 }}>
-          <button style={s.logoutBtn(isMobile)} onClick={onLogout}><LogOut size={13} /> Changer de profil</button>
+          <button style={s.logoutBtn(isMobile)} onClick={handleLogoutClick}><LogOut size={13} /> Changer de profil</button>
         </div>
       </aside>
 
@@ -267,7 +397,6 @@ export default function DashboardPlombier({ onLogout }) {
           <p style={s.pageSub}>{activeView === 'espace' ? 'Déclarez vos utilisations et consultez votre historique' : 'Consultez le stock disponible'}</p>
         </div>
 
-        {/* Cartes KPI (uniquement dans "Mon espace") */}
         {activeView === 'espace' && (
           <div style={s.statsGrid(isMobile)}>
             <div style={s.stat}>
@@ -299,7 +428,6 @@ export default function DashboardPlombier({ onLogout }) {
           </div>
         )}
 
-        {/* Vue "Mon espace" */}
         {activeView === 'espace' && (
           <>
             <div style={s.card}>
@@ -357,7 +485,6 @@ export default function DashboardPlombier({ onLogout }) {
           </>
         )}
 
-        {/* Vue "Stock" */}
         {activeView === 'stock' && (
           <div style={s.card}>
             <div style={s.cardHead}>
