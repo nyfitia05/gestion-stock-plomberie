@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { collection, getDocs, addDoc, updateDoc, doc, query, where, getDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Package, TrendingDown, PlusCircle, AlertTriangle, LogOut, Users, LogIn } from 'lucide-react';
+import { Package, TrendingDown, PlusCircle, AlertTriangle, LogOut, Users, LogIn, Edit, Trash2, Save, X } from 'lucide-react';
 
 // ----- COULEURS (identiques à l'admin) -----
 const NAVY = '#1a3a5c';
@@ -171,14 +171,13 @@ const s = {
     textAlign: 'left',
     boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
   },
+  iconBtn: { background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center' },
+  editRow: { display: 'flex', gap: '8px', alignItems: 'center' },
 };
 
 export default function DashboardPlombier({ onLogout }) {
   const isMobile = useIsMobile();
-  // Gestion de l'ID du plombier connecté (stocké dans localStorage)
-  const [selectedPlombierId, setSelectedPlombierId] = useState(() => {
-    return localStorage.getItem('plombierId') || null;
-  });
+  const [selectedPlombierId, setSelectedPlombierId] = useState(() => localStorage.getItem('plombierId') || null);
   const [plombier, setPlombier] = useState(null);
   const [plombiersList, setPlombiersList] = useState([]);
   const [articles, setArticles] = useState([]);
@@ -188,10 +187,14 @@ export default function DashboardPlombier({ onLogout }) {
   const [loadingList, setLoadingList] = useState(false);
   const [error, setError] = useState('');
   const [activeView, setActiveView] = useState('espace');
+  // États pour l'édition d'une sortie
+  const [editingSortieId, setEditingSortieId] = useState(null);
+  const [editQuantite, setEditQuantite] = useState('');
+  const [editChantier, setEditChantier] = useState('');
 
-  // 1. Charger la liste des plombiers (pour l'écran de sélection)
+  // Charger la liste des plombiers (si non connecté)
   useEffect(() => {
-    if (selectedPlombierId) return; // déjà connecté
+    if (selectedPlombierId) return;
     const fetchPlombiersList = async () => {
       setLoadingList(true);
       try {
@@ -207,7 +210,7 @@ export default function DashboardPlombier({ onLogout }) {
     fetchPlombiersList();
   }, [selectedPlombierId]);
 
-  // 2. Charger le plombier sélectionné par son ID
+  // Charger le plombier sélectionné
   useEffect(() => {
     if (!selectedPlombierId) {
       setPlombier(null);
@@ -231,32 +234,32 @@ export default function DashboardPlombier({ onLogout }) {
     fetchPlombier();
   }, [selectedPlombierId]);
 
-  // 3. Charger les articles et les sorties propres au plombier (si plombier existe)
-  useEffect(() => {
+  // Charger articles + sorties du plombier
+  const loadData = async () => {
     if (!plombier) return;
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        // Articles
-        const articlesSnap = await getDocs(query(collection(db, 'articles')));
-        let articlesData = articlesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        articlesData.sort((a, b) => (a.nom || '').localeCompare(b.nom));
-        setArticles(articlesData);
+    setLoading(true);
+    try {
+      const articlesSnap = await getDocs(query(collection(db, 'articles')));
+      let articlesData = articlesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      articlesData.sort((a, b) => (a.nom || '').localeCompare(b.nom));
+      setArticles(articlesData);
 
-        // Sorties du plombier
-        const sortiesSnap = await getDocs(query(collection(db, 'sorties'), where('plombierId', '==', plombier.id)));
-        let sortiesData = sortiesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        sortiesData.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setSorties(sortiesData);
-      } catch (err) {
-        console.error(err);
-        setError('Erreur de chargement : ' + err.message);
-      }
-      setLoading(false);
-    };
+      const sortiesSnap = await getDocs(query(collection(db, 'sorties'), where('plombierId', '==', plombier.id)));
+      let sortiesData = sortiesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      sortiesData.sort((a, b) => new Date(b.date) - new Date(a.date));
+      setSorties(sortiesData);
+    } catch (err) {
+      console.error(err);
+      setError('Erreur de chargement : ' + err.message);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
     loadData();
   }, [plombier]);
 
+  // Ajouter une sortie
   const handleSortie = async () => {
     setError('');
     if (!form.articleId || !form.quantite || !form.chantier) {
@@ -282,20 +285,74 @@ export default function DashboardPlombier({ onLogout }) {
       await updateDoc(doc(db, 'articles', form.articleId), {
         quantite_stock: article.quantite_stock - Number(form.quantite),
       });
-      // Recharger
-      const articlesSnap = await getDocs(query(collection(db, 'articles')));
-      let articlesData = articlesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      articlesData.sort((a, b) => (a.nom || '').localeCompare(b.nom));
-      setArticles(articlesData);
-      const sortiesSnap = await getDocs(query(collection(db, 'sorties'), where('plombierId', '==', plombier.id)));
-      let sortiesData = sortiesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      sortiesData.sort((a, b) => new Date(b.date) - new Date(a.date));
-      setSorties(sortiesData);
+      await loadData();
       setForm({ articleId: '', quantite: 1, chantier: '' });
       setError(`✓ Sortie enregistrée : ${form.quantite} ${article.unite} pour ${form.chantier}`);
       setTimeout(() => setError(''), 3000);
     } catch (err) {
       setError('Erreur : ' + err.message);
+    }
+  };
+
+  // Modifier une sortie
+  const handleEditSortie = async (sortie) => {
+    if (!editQuantite || editQuantite <= 0) {
+      setError('Quantité invalide');
+      return;
+    }
+    const newQuantite = Number(editQuantite);
+    const ancienneQuantite = sortie.quantite;
+    const difference = newQuantite - ancienneQuantite; // >0 => ajout au stock? Non: sens inverse car sortie
+    // En réalité: si nouvelle quantité > ancienne, on retire plus de stock (diff positive)
+    // Si nouvelle quantité < ancienne, on rend du stock (diff négative)
+    const article = articles.find(a => a.id === sortie.articleId);
+    if (!article) return;
+
+    // Vérifier stock suffisant si on augmente la sortie
+    if (difference > 0 && article.quantite_stock < difference) {
+      setError(`Stock insuffisant pour augmenter la sortie de ${difference} ${article.unite}`);
+      return;
+    }
+
+    try {
+      // Mettre à jour la sortie
+      await updateDoc(doc(db, 'sorties', sortie.id), {
+        quantite: newQuantite,
+        chantier: editChantier,
+        // On peut aussi mettre à jour la date si souhaité, mais on garde l'originale
+      });
+      // Mettre à jour le stock: on soustrait la différence (car sortie augmentée => stock diminue)
+      // Si différence négative, on ajoute au stock
+      await updateDoc(doc(db, 'articles', sortie.articleId), {
+        quantite_stock: article.quantite_stock - difference
+      });
+      await loadData();
+      setEditingSortieId(null);
+      setError(`✓ Sortie modifiée : ${newQuantite} ${article.unite} pour ${editChantier}`);
+      setTimeout(() => setError(''), 3000);
+    } catch (err) {
+      setError('Erreur modification : ' + err.message);
+    }
+  };
+
+  // Supprimer une sortie
+  const handleDeleteSortie = async (sortie) => {
+    if (!confirm(`Supprimer cette sortie de ${sortie.quantite} ${sortie.articleNom} ? Le stock sera remis à jour.`)) return;
+    try {
+      // Rendre le stock
+      const article = articles.find(a => a.id === sortie.articleId);
+      if (article) {
+        await updateDoc(doc(db, 'articles', sortie.articleId), {
+          quantite_stock: article.quantite_stock + sortie.quantite
+        });
+      }
+      // Supprimer le document de sortie
+      await deleteDoc(doc(db, 'sorties', sortie.id));
+      await loadData();
+      setError(`✓ Sortie supprimée, ${sortie.quantite} ${article?.unite || ''} réintégré(s) au stock`);
+      setTimeout(() => setError(''), 3000);
+    } catch (err) {
+      setError('Erreur suppression : ' + err.message);
     }
   };
 
@@ -311,7 +368,7 @@ export default function DashboardPlombier({ onLogout }) {
     setPlombier(null);
     setSorties([]);
     setForm({ articleId: '', quantite: 1, chantier: '' });
-    if (onLogout) onLogout(); // appel au parent si besoin
+    if (onLogout) onLogout();
   };
 
   // Écran de sélection des plombiers
@@ -366,7 +423,6 @@ export default function DashboardPlombier({ onLogout }) {
     );
   }
 
-  // Dashboard du plombier connecté
   if (error && !plombier) return <div style={{ padding: '40px', color: DANGER }}>{error}</div>;
   if (!plombier) return <div style={{ padding: '40px' }}>Chargement du profil...</div>;
 
@@ -380,7 +436,7 @@ export default function DashboardPlombier({ onLogout }) {
         </div>
         <nav style={s.nav(isMobile)}>
           <button style={s.navBtn(activeView === 'espace', isMobile)} onClick={() => setActiveView('espace')}>
-            <TrendingDown size={16} /> Mon ebgvfrspace
+            <TrendingDown size={16} /> Mon espace
           </button>
           <button style={s.navBtn(activeView === 'stock', isMobile)} onClick={() => setActiveView('stock')}>
             <Package size={16} /> Stock
@@ -456,25 +512,52 @@ export default function DashboardPlombier({ onLogout }) {
             <div style={s.card}>
               <div style={s.cardHead}>
                 <div style={s.cardIcon}><TrendingDown size={14} color={NAVY} /></div>
-                <span style={s.cardTitle}>Mes dernières sorties</span>
+                <span style={s.cardTitle}>Mes sorties - Modifier / Supprimer</span>
               </div>
               <div style={s.tableWrapper}>
                 <table style={s.table}>
                   <thead>
-                    <tr><th style={s.th}>Article</th><th style={s.th}>Qté</th><th style={s.th}>Chantier</th><th style={s.th}>Date</th></tr>
+                    <tr><th style={s.th}>Article</th><th style={s.th}>Qté</th><th style={s.th}>Chantier</th><th style={s.th}>Date</th><th style={s.th}>Actions</th></tr>
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan="4" style={s.td}>Chargement…</td></tr>
+                      <tr><td colSpan="5" style={s.td}>Chargement…</td></tr>
                     ) : sorties.length === 0 ? (
-                      <tr><td colSpan="4" style={{ ...s.td, textAlign: 'center' }}>Aucune sortie</td></tr>
+                      <td><td colSpan="5" style={{ ...s.td, textAlign: 'center' }}>Aucune sortie</td></tr>
                     ) : (
                       sorties.map(s => (
                         <tr key={s.id}>
-                          <td style={s.td}>{s.articleNom}</td>
-                          <td style={{ ...s.td, color: DANGER, fontWeight: '700' }}>-{s.quantite}</td>
-                          <td style={s.td}>{s.chantier}</td>
-                          <td style={s.td}>{s.date}</td>
+                          {editingSortieId === s.id ? (
+                            <>
+                              <td style={s.td}>{s.articleNom}</td>
+                              <td style={s.td}>
+                                <input type="number" value={editQuantite} onChange={e => setEditQuantite(e.target.value)} style={{ width: '80px', padding: '4px', borderRadius: '4px', border: `1px solid ${BORDER}` }} />
+                              </td>
+                              <td style={s.td}>
+                                <input type="text" value={editChantier} onChange={e => setEditChantier(e.target.value)} style={{ padding: '4px', borderRadius: '4px', border: `1px solid ${BORDER}` }} />
+                              </td>
+                              <td style={s.td}>{s.date}</td>
+                              <td style={s.td}>
+                                <div style={s.editRow}>
+                                  <button onClick={() => handleEditSortie(s)} style={s.iconBtn}><Save size={16} color={SUCCESS} /></button>
+                                  <button onClick={() => setEditingSortieId(null)} style={s.iconBtn}><X size={16} color={DANGER} /></button>
+                                </div>
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td style={s.td}>{s.articleNom}</td>
+                              <td style={{ ...s.td, color: DANGER, fontWeight: '700' }}>-{s.quantite}</td>
+                              <td style={s.td}>{s.chantier}</td>
+                              <td style={s.td}>{s.date}</td>
+                              <td style={s.td}>
+                                <div style={s.editRow}>
+                                  <button onClick={() => { setEditingSortieId(s.id); setEditQuantite(s.quantite); setEditChantier(s.chantier); }} style={s.iconBtn}><Edit size={16} color={NAVY} /></button>
+                                  <button onClick={() => handleDeleteSortie(s)} style={s.iconBtn}><Trash2 size={16} color={DANGER} /></button>
+                                </div>
+                              </td>
+                            </>
+                          )}
                         </tr>
                       ))
                     )}
