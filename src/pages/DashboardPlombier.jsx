@@ -158,8 +158,6 @@ export default function DashboardPlombier({ onLogout }) {
   const supprimerSortie = async (sortie) => {
     if (!confirm(`Annuler la sortie de ${sortie.quantite} "${sortie.articleNom}" ? Le stock sera remis.`)) return;
     try {
-      // Restituer le stock
-      const articleRef = doc(db, 'articles', sortie.articleId);
       const articleSnap = await getDocs(query(collection(db, 'articles'), where('id', '==', sortie.articleId)));
       if (!articleSnap.empty) {
         const article = articleSnap.docs[0].data();
@@ -178,13 +176,11 @@ export default function DashboardPlombier({ onLogout }) {
     }
   };
 
-  // Ouvrir le formulaire de modification
   const startEdit = (sortie) => {
     setEditingSortieId(sortie.id);
     setEditForm({ quantite: sortie.quantite, chantier: sortie.chantier });
   };
 
-  // Enregistrer la modification
   const saveEdit = async (sortie) => {
     const newQuantite = Number(editForm.quantite);
     if (isNaN(newQuantite) || newQuantite <= 0) {
@@ -195,7 +191,6 @@ export default function DashboardPlombier({ onLogout }) {
       setError('Chantier requis');
       return;
     }
-    // Vérifier le stock si la quantité augmente
     const article = articles.find(a => a.id === sortie.articleId);
     if (!article) {
       setError('Article introuvable');
@@ -207,12 +202,10 @@ export default function DashboardPlombier({ onLogout }) {
       return;
     }
     try {
-      // Mettre à jour la sortie
       await updateDoc(doc(db, 'sorties', sortie.id), {
         quantite: newQuantite,
         chantier: editForm.chantier,
       });
-      // Ajuster le stock
       await updateDoc(doc(db, 'articles', sortie.articleId), {
         quantite_stock: article.quantite_stock - difference,
       });
@@ -313,8 +306,12 @@ export default function DashboardPlombier({ onLogout }) {
                 <table style={styles.table}>
                   <thead>
                     <tr>
-                      <th style={styles.th}>Article</th><th style={styles.th}>Qté</th><th style={styles.th}>Chantier</th><th style={styles.th}>Date</th><th style={styles.th}>Actions</th>
-                    </table>
+                      <th style={styles.th}>Article</th>
+                      <th style={styles.th}>Qté</th>
+                      <th style={styles.th}>Chantier</th>
+                      <th style={styles.th}>Date</th>
+                      <th style={styles.th}>Actions</th>
+                    </tr>
                   </thead>
                   <tbody>
                     {loading ? (
@@ -336,7 +333,7 @@ export default function DashboardPlombier({ onLogout }) {
                               <td style={styles.td}>{s.date}</td>
                               <td style={styles.td}>
                                 <button style={styles.btnSecondary} onClick={() => saveEdit(s)}><Save size={14} /> OK</button>
-                                <button style={styles.btnDanger} onClick={cancelEdit} style={{ marginLeft: '8px' }}><X size={14} /> Annuler</button>
+                                <button style={styles.btnDanger} onClick={cancelEdit}><X size={14} /> Annuler</button>
                               </td>
                             </>
                           ) : (
@@ -377,7 +374,13 @@ export default function DashboardPlombier({ onLogout }) {
             <div style={styles.tableWrapper}>
               <table style={styles.table}>
                 <thead>
-                  <tr><th style={styles.th}>Article</th><th style={styles.th}>Réf</th><th style={styles.th}>Stock</th><th style={styles.th}>Unité</th><th style={styles.th}>Statut</th></tr>
+                  <tr>
+                    <th style={styles.th}>Article</th>
+                    <th style={styles.th}>Réf</th>
+                    <th style={styles.th}>Stock</th>
+                    <th style={styles.th}>Unité</th>
+                    <th style={styles.th}>Statut</th>
+                  </tr>
                 </thead>
                 <tbody>
                   {articles.map(a => {
