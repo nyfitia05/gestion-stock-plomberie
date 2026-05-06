@@ -115,12 +115,24 @@ async function ajouterArticle() {
   if (!newArt.nom) return alert('Nom requis');
   setSaving(true);
   const dateAjout = new Date().toLocaleDateString('fr-FR');
-  await addDoc(collection(db, 'articles'), {
+
+  const docRef = await addDoc(collection(db, 'articles'), {
     ...newArt,
     quantite_stock: Number(newArt.quantite_stock) || 0,
     seuil_alerte: Number(newArt.seuil_alerte) || 5,
-    derniere_commande: dateAjout, // ← date d'insertion automatique
+    derniere_commande: dateAjout,
   });
+
+  // ← Trace dans l'historique si quantité initiale > 0
+  if (Number(newArt.quantite_stock) > 0) {
+    await addDoc(collection(db, 'bons_commande'), {
+      fournisseur: newArt.fournisseur || '—',
+      reference_bon: 'Stock initial',
+      date: dateAjout,
+      lignes: [{ articleId: docRef.id, articleNom: newArt.nom, quantite: Number(newArt.quantite_stock) }],
+    });
+  }
+
   setNewArt({ nom: '', reference: '', fournisseur: '', unite: 'Unité', seuil_alerte: 5, quantite_stock: 0 });
   await loadAll();
   setSaving(false);
@@ -128,10 +140,22 @@ async function ajouterArticle() {
 
 async function updateArticleQuantite(articleId, newQty) {
   if (isNaN(newQty) || newQty < 0) return;
+  const article = articles.find(a => a.id === articleId);
+  const dateUpdate = new Date().toLocaleDateString('fr-FR');
+
   await updateDoc(doc(db, 'articles', articleId), {
     quantite_stock: Number(newQty),
-    derniere_commande: new Date().toLocaleDateString('fr-FR'), // ← date du dernier update
+    derniere_commande: dateUpdate,
   });
+
+  // ← On enregistre le mouvement dans bons_commande pour l'historique
+  await addDoc(collection(db, 'bons_commande'), {
+    fournisseur: article?.fournisseur || '—',
+    reference_bon: 'Mise à jour manuelle',
+    date: dateUpdate,
+    lignes: [{ articleId, articleNom: article?.nom || '—', quantite: Number(newQty) }],
+  });
+
   await loadAll();
   setEditingArticleId(null);
 }
@@ -487,7 +511,6 @@ const renderCommandes = () => (
   );
 
 const renderHistorique = () => {
-  // On fusionne sorties + bons en une seule liste
   const mouvements = [
     ...sorties.map(s => ({
       id: 'sortie-' + s.id,
@@ -501,17 +524,13 @@ const renderHistorique = () => {
     ...bons.map(b => ({
       id: 'bon-' + b.id,
       type: 'reception',
-      article: b.lignes?.map(l => {
-        const art = articles.find(a => a.id === l.articleId);
-        return `${art?.nom || l.articleId} (×${l.quantite})`;
-      }).join(', ') || '—',
+      article: b.lignes?.map(l => `${l.articleNom || l.articleId} (×${l.quantite})`).join(', ') || '—',
       quantite: b.lignes?.reduce((sum, l) => sum + Number(l.quantite || 0), 0),
       detail: b.reference_bon || '—',
       acteur: b.fournisseur,
       date: b.date,
     })),
   ].sort((a, b) => {
-    // Tri par date décroissante (format dd/mm/yyyy)
     const parse = d => {
       if (!d) return 0;
       const [day, month, year] = d.split('/');
