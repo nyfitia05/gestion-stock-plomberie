@@ -271,7 +271,7 @@ export default function DashboardAdmin({ onLogout }) {
         <table style={baseStyles.table}>
           <thead>
             <tr>
-              <th style={baseStyles.th}>Nolkjuhnbgv m</th>
+              <th style={baseStyles.th}>Nom</th>
               <th style={baseStyles.th}>Réf</th>
               <th style={baseStyles.th}>Fournisseur</th>
               <th style={baseStyles.th}>Qté</th>
