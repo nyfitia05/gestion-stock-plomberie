@@ -325,40 +325,57 @@ export default function DashboardAdmin({ onLogout }) {
   );
 
   // MODIFIÉ : Commandes = ajout article + réception livraison
-const renderCommandes = () => (
-  <div style={baseStyles.card}>
-    <div style={baseStyles.cardHead}>
-      <div style={baseStyles.cardTitle}>
-        <div style={baseStyles.cardIcon}><Truck size={14} color={NAVY} /></div>
-        Réceptionner une livraison (bon de commande)
-      </div>
-    </div>
-    <div style={baseStyles.cardBody}>
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
-        <input style={{ ...baseStyles.input, flex: 1, minWidth: '160px' }} placeholder="Fournisseur *" value={bon.fournisseur} onChange={e => setBon({ ...bon, fournisseur: e.target.value })} />
-        <input style={{ ...baseStyles.input, flex: 1, minWidth: '160px' }} placeholder="Référence bon" value={bon.reference_bon} onChange={e => setBon({ ...bon, reference_bon: e.target.value })} />
-      </div>
-      {bon.lignes.map((ligne, idx) => (
-        <div key={idx} style={baseStyles.bonRow}>
-          <select style={{ ...baseStyles.select, flex: 1 }} value={ligne.articleId} onChange={e => { const l = [...bon.lignes]; l[idx].articleId = e.target.value; setBon({ ...bon, lignes: l }); }}>
-            <option value="">Choisir un article…</option>
-            {articles.map(a => <option key={a.id} value={a.id}>{a.nom}</option>)}
-          </select>
-          <input style={{ ...baseStyles.input, width: '90px', flexShrink: 0 }} type="number" placeholder="Qté" value={ligne.quantite} onChange={e => { const l = [...bon.lignes]; l[idx].quantite = e.target.value; setBon({ ...bon, lignes: l }); }} />
-          <button style={{ ...baseStyles.btnDanger, flexShrink: 0 }} onClick={() => setBon({ ...bon, lignes: bon.lignes.filter((_, i) => i !== idx) })}>✕</button>
+  const renderCommandes = () => (
+    <>
+      <div style={baseStyles.card}>
+        <div style={baseStyles.cardHead}>
+          <div style={baseStyles.cardTitle}><div style={baseStyles.cardIcon}><Package size={14} color={NAVY} /></div>Ajouter un article au catalogue</div>
         </div>
-      ))}
-      <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
-        <button style={{ ...baseStyles.btnNavy, background: '#f0f4f9', color: NAVY }} onClick={() => setBon(b => ({ ...b, lignes: [...b.lignes, { articleId: '', quantite: '' }] }))}>
-          <PlusCircle size={14} /> Ajouter ligne
-        </button>
-        <button style={{ ...baseStyles.btnOrange, opacity: saving ? 0.6 : 1 }} onClick={validerBon} disabled={saving}>
-          <Truck size={14} /> {saving ? 'Enregistrement…' : 'Valider le bon'}
-        </button>
+        <div style={baseStyles.cardBody}>
+          <div style={baseStyles.formGrid}>
+            <input style={baseStyles.input} placeholder="Nom *" value={newArt.nom} onChange={e => setNewArt({ ...newArt, nom: e.target.value })} />
+            <input style={baseStyles.input} placeholder="Référence" value={newArt.reference} onChange={e => setNewArt({ ...newArt, reference: e.target.value })} />
+            <input style={baseStyles.input} placeholder="Fournisseur" value={newArt.fournisseur} onChange={e => setNewArt({ ...newArt, fournisseur: e.target.value })} />
+            <input style={baseStyles.input} placeholder="Unité (m, u, kg…)" value={newArt.unite} onChange={e => setNewArt({ ...newArt, unite: e.target.value })} />
+            <input style={baseStyles.input} type="number" placeholder="Seuil alerte" value={newArt.seuil_alerte} onChange={e => setNewArt({ ...newArt, seuil_alerte: e.target.value })} />
+            <button style={{ ...baseStyles.btnNavy, opacity: saving ? 0.6 : 1 }} onClick={ajouterArticle} disabled={saving}>
+              <PlusCircle size={14} /> {saving ? 'Enregistrement…' : 'Ajouter'}
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-);
+
+      <div style={baseStyles.card}>
+        <div style={baseStyles.cardHead}>
+          <div style={baseStyles.cardTitle}><div style={baseStyles.cardIcon}><Truck size={14} color={NAVY} /></div>Réceptionner une livraison</div>
+        </div>
+        <div style={baseStyles.cardBody}>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
+            <input style={{ ...baseStyles.input, flex: 1, minWidth: '160px' }} placeholder="Fournisseur *" value={bon.fournisseur} onChange={e => setBon({ ...bon, fournisseur: e.target.value })} />
+            <input style={{ ...baseStyles.input, flex: 1, minWidth: '160px' }} placeholder="Référence bon" value={bon.reference_bon} onChange={e => setBon({ ...bon, reference_bon: e.target.value })} />
+          </div>
+          {bon.lignes.map((ligne, idx) => (
+            <div key={idx} style={baseStyles.bonRow}>
+              <select style={{ ...baseStyles.select, flex: 1 }} value={ligne.articleId} onChange={e => { const l = [...bon.lignes]; l[idx].articleId = e.target.value; setBon({ ...bon, lignes: l }); }}>
+                <option value="">Choisir un article…</option>
+                {articles.map(a => <option key={a.id} value={a.id}>{a.nom}</option>)}
+              </select>
+              <input style={{ ...baseStyles.input, width: '90px', flexShrink: 0 }} type="number" placeholder="Qté" value={ligne.quantite} onChange={e => { const l = [...bon.lignes]; l[idx].quantite = e.target.value; setBon({ ...bon, lignes: l }); }} />
+              <button style={{ ...baseStyles.btnDanger, flexShrink: 0 }} onClick={() => setBon({ ...bon, lignes: bon.lignes.filter((_, i) => i !== idx) })}>✕</button>
+            </div>
+          ))}
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+            <button style={{ ...baseStyles.btnNavy, background: '#f0f4f9', color: NAVY }} onClick={() => setBon(b => ({ ...b, lignes: [...b.lignes, { articleId: '', quantite: '' }] }))}>
+              <PlusCircle size={14} /> Ajouter ligne
+            </button>
+            <button style={{ ...baseStyles.btnOrange, opacity: saving ? 0.6 : 1 }} onClick={validerBon} disabled={saving}>
+              <Truck size={14} /> {saving ? 'Enregistrement…' : 'Valider le bon'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
 
   const renderSorties = () => (
     <div style={baseStyles.card}>
