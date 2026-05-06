@@ -3,7 +3,7 @@ import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } 
 import { db } from '../lib/firebase';
 import { Package, TrendingDown, PlusCircle, AlertTriangle, LogOut, Edit, Trash2, Save, X } from 'lucide-react';
 
-// ----- COULEURS -----
+// COULEURS
 const NAVY = '#1a3a5c';
 const ORANGE = '#e85d24';
 const BG = '#f0f4f9';
@@ -15,7 +15,7 @@ const SUCCESS = '#16a34a';
 const SUCCESS_BG = '#dcfce7';
 const WARNING = '#d97706';
 
-// ----- RESPONSIVE -----
+// RESPONSIVE
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' ? window.innerWidth < 768 : false
@@ -28,7 +28,6 @@ const useIsMobile = () => {
   return isMobile;
 };
 
-// ----- STYLES (version simplifiée mais conservant le design) -----
 const getStyles = (isMobile) => ({
   shell: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', minHeight: '100vh', background: BG, fontFamily: "'DM Sans','Segoe UI',sans-serif" },
   sidebar: { width: isMobile ? '100%' : '230px', flexShrink: 0, background: NAVY, borderRadius: isMobile ? '0 0 20px 20px' : '0 24px 24px 0', display: 'flex', flexDirection: isMobile ? 'row' : 'column', alignItems: isMobile ? 'center' : 'stretch', padding: isMobile ? '10px 14px' : '24px 14px', position: isMobile ? 'relative' : 'sticky', top: 0, height: isMobile ? 'auto' : '100vh', boxShadow: isMobile ? '0 4px 20px rgba(26,58,92,0.12)' : '4px 0 20px rgba(26,58,92,0.12)', zIndex: 10 },
@@ -80,7 +79,6 @@ export default function DashboardPlombier({ onLogout }) {
   const [editingSortieId, setEditingSortieId] = useState(null);
   const [editForm, setEditForm] = useState({ quantite: '', chantier: '' });
 
-  // Charger le premier plombier
   useEffect(() => {
     const fetchPlombier = async () => {
       const q = query(collection(db, 'plombiers'), where('role', '==', 'plombier'));
@@ -119,7 +117,6 @@ export default function DashboardPlombier({ onLogout }) {
     if (plombier) loadData();
   }, [plombier]);
 
-  // Déclarer une nouvelle sortie
   const handleSortie = async () => {
     setError('');
     if (!form.articleId || !form.quantite || !form.chantier) {
@@ -154,7 +151,6 @@ export default function DashboardPlombier({ onLogout }) {
     }
   };
 
-  // Supprimer une sortie (annuler et restituer le stock)
   const supprimerSortie = async (sortie) => {
     if (!confirm(`Annuler la sortie de ${sortie.quantite} "${sortie.articleNom}" ? Le stock sera remis.`)) return;
     try {
