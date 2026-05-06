@@ -170,7 +170,7 @@ export default function DashboardPlombier({ onLogout }) {
             <div style={styles.card}>
               <h2>Mes sorties</h2>
               <table style={styles.table}>
-                <thead><tr><th style={styles.th}>Article</th><th>Quantité</th><th>Chantier</th><th>Date</th><th></th></tr></thead>
+                <thead><tr><th style={styles.th}>Article</th><th>Quantité</th><th>Chantier</th><th>Datvere</th><th></th></tr></thead>
                 <tbody>
                   {sorties.map(s => (
                     <tr key={s.id}>
