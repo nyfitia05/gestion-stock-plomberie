@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, getDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, getDoc, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Package, TrendingDown, PlusCircle, AlertTriangle, LogOut, Users, LogIn, Edit, Trash2, Save, X } from 'lucide-react';
 
-// ----- COULEURS (identiques à l'admin) -----
+// ----- COULEURS -----
 const NAVY = '#1a3a5c';
 const ORANGE = '#e85d24';
 const BG = '#f0f4f9';
@@ -177,7 +177,7 @@ const s = {
 
 export default function DashboardPlombier({ onLogout }) {
   const isMobile = useIsMobile();
-  const [selectedPlombierId, setSelectedPlombierId] = useState(() => localStorage.getItem('plombierId') || null);
+  const [selectedPlombierId, setSelectedPlombierId] = useState(null);
   const [plombier, setPlombier] = useState(null);
   const [plombiersList, setPlombiersList] = useState([]);
   const [articles, setArticles] = useState([]);
@@ -187,14 +187,21 @@ export default function DashboardPlombier({ onLogout }) {
   const [loadingList, setLoadingList] = useState(false);
   const [error, setError] = useState('');
   const [activeView, setActiveView] = useState('espace');
-  // États pour l'édition d'une sortie
   const [editingSortieId, setEditingSortieId] = useState(null);
   const [editQuantite, setEditQuantite] = useState('');
   const [editChantier, setEditChantier] = useState('');
+  const [initializing, setInitializing] = useState(true);
 
-  // Charger la liste des plombiers (si non connecté)
+  // Charger l'ID depuis localStorage au montage
   useEffect(() => {
-    if (selectedPlombierId) return;
+    const storedId = localStorage.getItem('plombierId');
+    if (storedId) setSelectedPlombierId(storedId);
+    setInitializing(false);
+  }, []);
+
+  // Charger la liste des plombiers (si pas d'ID sélectionné)
+  useEffect(() => {
+    if (selectedPlombierId || initializing) return;
     const fetchPlombiersList = async () => {
       setLoadingList(true);
       try {
@@ -208,7 +215,7 @@ export default function DashboardPlombier({ onLogout }) {
       setLoadingList(false);
     };
     fetchPlombiersList();
-  }, [selectedPlombierId]);
+  }, [selectedPlombierId, initializing]);
 
   // Charger le plombier sélectionné
   useEffect(() => {
@@ -234,7 +241,7 @@ export default function DashboardPlombier({ onLogout }) {
     fetchPlombier();
   }, [selectedPlombierId]);
 
-  // Charger articles + sorties du plombier
+  // Charger les données (articles + sorties)
   const loadData = async () => {
     if (!plombier) return;
     setLoading(true);
@@ -283,7 +290,7 @@ export default function DashboardPlombier({ onLogout }) {
         date: new Date().toLocaleDateString('fr-FR'),
       });
       await updateDoc(doc(db, 'articles', form.articleId), {
-        quantite_stock: article.quantite_stock - Number(form.quantite),
+        quantite_stock: increment(-Number(form.quantite))
       });
       await loadData();
       setForm({ articleId: '', quantite: 1, chantier: '' });
@@ -302,29 +309,22 @@ export default function DashboardPlombier({ onLogout }) {
     }
     const newQuantite = Number(editQuantite);
     const ancienneQuantite = sortie.quantite;
-    const difference = newQuantite - ancienneQuantite; // >0 => ajout au stock? Non: sens inverse car sortie
-    // En réalité: si nouvelle quantité > ancienne, on retire plus de stock (diff positive)
-    // Si nouvelle quantité < ancienne, on rend du stock (diff négative)
+    const difference = newQuantite - ancienneQuantite; // >0 = on sort plus, <0 = on sort moins
     const article = articles.find(a => a.id === sortie.articleId);
     if (!article) return;
 
-    // Vérifier stock suffisant si on augmente la sortie
     if (difference > 0 && article.quantite_stock < difference) {
       setError(`Stock insuffisant pour augmenter la sortie de ${difference} ${article.unite}`);
       return;
     }
 
     try {
-      // Mettre à jour la sortie
       await updateDoc(doc(db, 'sorties', sortie.id), {
         quantite: newQuantite,
         chantier: editChantier,
-        // On peut aussi mettre à jour la date si souhaité, mais on garde l'originale
       });
-      // Mettre à jour le stock: on soustrait la différence (car sortie augmentée => stock diminue)
-      // Si différence négative, on ajoute au stock
       await updateDoc(doc(db, 'articles', sortie.articleId), {
-        quantite_stock: article.quantite_stock - difference
+        quantite_stock: increment(-difference)
       });
       await loadData();
       setEditingSortieId(null);
@@ -339,17 +339,12 @@ export default function DashboardPlombier({ onLogout }) {
   const handleDeleteSortie = async (sortie) => {
     if (!confirm(`Supprimer cette sortie de ${sortie.quantite} ${sortie.articleNom} ? Le stock sera remis à jour.`)) return;
     try {
-      // Rendre le stock
-      const article = articles.find(a => a.id === sortie.articleId);
-      if (article) {
-        await updateDoc(doc(db, 'articles', sortie.articleId), {
-          quantite_stock: article.quantite_stock + sortie.quantite
-        });
-      }
-      // Supprimer le document de sortie
+      await updateDoc(doc(db, 'articles', sortie.articleId), {
+        quantite_stock: increment(sortie.quantite)
+      });
       await deleteDoc(doc(db, 'sorties', sortie.id));
       await loadData();
-      setError(`✓ Sortie supprimée, ${sortie.quantite} ${article?.unite || ''} réintégré(s) au stock`);
+      setError(`✓ Sortie supprimée, ${sortie.quantite} réintégré(s) au stock`);
       setTimeout(() => setError(''), 3000);
     } catch (err) {
       setError('Erreur suppression : ' + err.message);
@@ -371,7 +366,12 @@ export default function DashboardPlombier({ onLogout }) {
     if (onLogout) onLogout();
   };
 
-  // Écran de sélection des plombiers
+  // Écran de chargement initial
+  if (initializing) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: BG }}>Chargement...</div>;
+  }
+
+  // Écran de sélection des plombiers (si aucun ID stocké)
   if (!selectedPlombierId) {
     return (
       <div style={s.selectorContainer}>
@@ -423,6 +423,7 @@ export default function DashboardPlombier({ onLogout }) {
     );
   }
 
+  // Dashboard du plombier connecté
   if (error && !plombier) return <div style={{ padding: '40px', color: DANGER }}>{error}</div>;
   if (!plombier) return <div style={{ padding: '40px' }}>Chargement du profil...</div>;
 
@@ -523,7 +524,7 @@ export default function DashboardPlombier({ onLogout }) {
                     {loading ? (
                       <tr><td colSpan="5" style={s.td}>Chargement…</td></tr>
                     ) : sorties.length === 0 ? (
-                      <td><td colSpan="5" style={{ ...s.td, textAlign: 'center' }}>Aucune sortie</td></tr>
+                      <tr><td colSpan="5" style={{ ...s.td, textAlign: 'center' }}>Aucune sortie</td></tr>
                     ) : (
                       sorties.map(s => (
                         <tr key={s.id}>
