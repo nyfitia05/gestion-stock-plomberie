@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Package, TrendingDown, PlusCircle, AlertTriangle, LogOut, Trash2 } from 'lucide-react';
+import { Package, TrendingDown, PlusCircle, AlertTriangle, LogOut, Edit, Trash2, Save, X } from 'lucide-react';
 
 const NAVY = '#1a3a5c';
 const ORANGE = '#e85d24';
@@ -25,17 +25,41 @@ const useIsMobile = () => {
 };
 
 const getStyles = (isMobile) => ({
-  shell: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', minHeight: '100vh', background: BG },
-  sidebar: { width: isMobile ? '100%' : '230px', background: NAVY, padding: isMobile ? '10px' : '24px 14px' },
-  main: { flex: 1, padding: isMobile ? '18px 14px' : '28px 32px' },
-  card: { background: '#fff', borderRadius: '16px', border: `1px solid ${BORDER}`, marginBottom: '20px', padding: '16px' },
-  table: { width: '100%', borderCollapse: 'collapse' },
-  th: { textAlign: 'left', padding: '8px', background: '#f8fafc' },
-  td: { padding: '8px', borderBottom: `1px solid ${BORDER}` },
-  btnPrimary: { background: NAVY, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' },
-  btnDanger: { background: DANGER_BG, color: DANGER, border: 'none', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer' },
-  input: { border: `1px solid ${BORDER}`, padding: '8px', borderRadius: '8px', width: '100%', marginBottom: '12px' },
-  select: { border: `1px solid ${BORDER}`, padding: '8px', borderRadius: '8px', width: '100%', marginBottom: '12px' },
+  shell: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', minHeight: '100vh', background: BG, fontFamily: "'DM Sans','Segoe UI',sans-serif" },
+  sidebar: { width: isMobile ? '100%' : '230px', flexShrink: 0, background: NAVY, borderRadius: isMobile ? '0 0 20px 20px' : '0 24px 24px 0', display: 'flex', flexDirection: isMobile ? 'row' : 'column', alignItems: isMobile ? 'center' : 'stretch', padding: isMobile ? '10px 14px' : '24px 14px', position: isMobile ? 'relative' : 'sticky', top: 0, height: isMobile ? 'auto' : '100vh', boxShadow: isMobile ? '0 4px 20px rgba(26,58,92,0.12)' : '4px 0 20px rgba(26,58,92,0.12)', zIndex: 10 },
+  logoWrap: { padding: isMobile ? '0 12px 0 0' : '0 8px 22px', borderBottom: isMobile ? 'none' : '1px solid rgba(255,255,255,0.1)', borderRight: isMobile ? '1px solid rgba(255,255,255,0.1)' : 'none', marginBottom: isMobile ? 0 : '16px', marginRight: isMobile ? '12px' : 0, display: 'flex', alignItems: 'center' },
+  nav: { flex: 1, display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: isMobile ? '6px' : 0, alignItems: isMobile ? 'center' : 'stretch' },
+  navBtn: (active) => ({ display: 'flex', alignItems: 'center', gap: '10px', width: isMobile ? 'auto' : '100%', padding: isMobile ? '8px 12px' : '10px 12px', borderRadius: '12px', marginBottom: isMobile ? 0 : '4px', cursor: 'pointer', border: 'none', background: active ? 'rgba(255,255,255,0.13)' : 'transparent', color: active ? '#fff' : 'rgba(255,255,255,0.55)', fontSize: '13px', fontWeight: active ? '600' : '400', textAlign: 'left', whiteSpace: 'nowrap' }),
+  main: { flex: 1, padding: isMobile ? '18px 14px' : '28px 32px', minWidth: 0 },
+  pageTitle: { fontSize: '22px', fontWeight: '700', color: '#1a2332', margin: '0 0 4px' },
+  pageSub: { fontSize: '13px', color: MUTED, margin: '0 0 20px' },
+  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: isMobile ? '10px' : '16px', marginBottom: '20px' },
+  stat: { background: '#fff', borderRadius: '16px', border: `1px solid ${BORDER}`, padding: '20px', position: 'relative', overflow: 'hidden' },
+  statAccent: (c) => ({ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: c }),
+  statVal: { fontSize: '28px', fontWeight: '700', color: '#1a2332', lineHeight: 1, marginBottom: '4px' },
+  statLbl: { fontSize: '12px', color: MUTED },
+  card: { background: '#fff', borderRadius: '16px', border: `1px solid ${BORDER}`, marginBottom: '20px', overflow: 'hidden' },
+  cardHead: { padding: '16px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' },
+  cardIcon: { width: '28px', height: '28px', borderRadius: '8px', background: '#e8f0f8', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  cardTitle: { fontSize: '14px', fontWeight: '600', color: '#1a2332' },
+  cardBody: { padding: '18px 20px' },
+  label: { fontSize: '11px', fontWeight: '600', color: MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '5px' },
+  input: { padding: '9px 12px', border: `1px solid ${BORDER}`, borderRadius: '10px', fontSize: '13px', background: '#fff', width: '100%', boxSizing: 'border-box', marginBottom: '12px', outline: 'none' },
+  select: { padding: '9px 12px', border: `1px solid ${BORDER}`, borderRadius: '10px', fontSize: '13px', background: '#fff', width: '100%', boxSizing: 'border-box', marginBottom: '12px', outline: 'none' },
+  btnPrimary: { background: NAVY, color: '#fff', border: 'none', borderRadius: '10px', padding: '9px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', width: '100%', justifyContent: 'center' },
+  btnSecondary: { background: '#f0f4f9', color: NAVY, border: 'none', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' },
+  btnDanger: { background: DANGER_BG, color: DANGER, border: 'none', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '600px' },
+  th: { padding: '8px 12px', textAlign: 'left', color: MUTED, fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#f8fafc', borderBottom: `1px solid ${BORDER}` },
+  td: { padding: '10px 12px', borderBottom: `1px solid ${BORDER}`, color: '#1a2332', fontSize: '13px' },
+  badge: (type) => {
+    const map = { ok: { bg: SUCCESS_BG, color: SUCCESS }, low: { bg: DANGER_BG, color: DANGER }, mid: { bg: '#fef3c7', color: WARNING } };
+    const { bg, color } = map[type] || map.ok;
+    return { display: 'inline-block', padding: '3px 9px', borderRadius: '20px', fontSize: '11px', fontWeight: '600', background: bg, color: color };
+  },
+  logoutBtn: { background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', marginLeft: isMobile ? 'auto' : 0 },
+  tableWrapper: { overflowX: 'auto', width: '100%' },
+  flexRow: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
 });
 
 export default function DashboardPlombier({ onLogout }) {
@@ -48,6 +72,8 @@ export default function DashboardPlombier({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeView, setActiveView] = useState('espace');
+  const [editingSortieId, setEditingSortieId] = useState(null);
+  const [editForm, setEditForm] = useState({ quantite: '', chantier: '' });
 
   useEffect(() => {
     const fetchPlombier = async () => {
@@ -77,6 +103,7 @@ export default function DashboardPlombier({ onLogout }) {
       sortiesData.sort((a, b) => new Date(b.date) - new Date(a.date));
       setSorties(sortiesData);
     } catch (err) {
+      console.error(err);
       setError('Erreur chargement : ' + err.message);
     }
     setLoading(false);
@@ -121,7 +148,7 @@ export default function DashboardPlombier({ onLogout }) {
   };
 
   const supprimerSortie = async (sortie) => {
-    if (!confirm(`Annuler la sortie de ${sortie.quantite} "${sortie.articleNom}" ?`)) return;
+    if (!confirm(`Annuler la sortie de ${sortie.quantite} "${sortie.articleNom}" ? Le stock sera remis.`)) return;
     try {
       const articleSnap = await getDocs(query(collection(db, 'articles'), where('id', '==', sortie.articleId)));
       if (!articleSnap.empty) {
@@ -129,80 +156,243 @@ export default function DashboardPlombier({ onLogout }) {
         await updateDoc(doc(db, 'articles', sortie.articleId), {
           quantite_stock: article.quantite_stock + sortie.quantite,
         });
+      } else {
+        setError('Article introuvable, stock non restitué.');
       }
       await deleteDoc(doc(db, 'sorties', sortie.id));
       await loadData();
-      setError(`✓ Sortie annulée.`);
+      setError(`✓ Sortie annulée : ${sortie.quantite} remis en stock.`);
       setTimeout(() => setError(''), 3000);
     } catch (err) {
-      setError('Erreur : ' + err.message);
+      setError('Erreur lors de l’annulation : ' + err.message);
     }
   };
 
-  if (error && !plombier) return <div>{error}</div>;
-  if (!plombier) return <div>Chargement...</div>;
+  const startEdit = (sortie) => {
+    setEditingSortieId(sortie.id);
+    setEditForm({ quantite: sortie.quantite, chantier: sortie.chantier });
+  };
+
+  const saveEdit = async (sortie) => {
+    const newQuantite = Number(editForm.quantite);
+    if (isNaN(newQuantite) || newQuantite <= 0) {
+      setError('Quantité invalide');
+      return;
+    }
+    if (!editForm.chantier.trim()) {
+      setError('Chantier requis');
+      return;
+    }
+    const article = articles.find(a => a.id === sortie.articleId);
+    if (!article) {
+      setError('Article introuvable');
+      return;
+    }
+    const difference = newQuantite - sortie.quantite;
+    if (difference > 0 && article.quantite_stock < difference) {
+      setError(`Stock insuffisant pour augmenter de ${difference} (reste ${article.quantite_stock})`);
+      return;
+    }
+    try {
+      await updateDoc(doc(db, 'sorties', sortie.id), {
+        quantite: newQuantite,
+        chantier: editForm.chantier,
+      });
+      await updateDoc(doc(db, 'articles', sortie.articleId), {
+        quantite_stock: article.quantite_stock - difference,
+      });
+      await loadData();
+      setEditingSortieId(null);
+      setError(`✓ Sortie modifiée : nouvelle quantité ${newQuantite} ${article.unite}`);
+      setTimeout(() => setError(''), 3000);
+    } catch (err) {
+      setError('Erreur modification : ' + err.message);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingSortieId(null);
+  };
+
+  if (error && !plombier) return <div style={{ padding: '40px', color: DANGER }}>{error}</div>;
+  if (!plombier) return <div style={{ padding: '40px' }}>Chargement du profil...</div>;
 
   const stockBas = articles.filter(a => a.quantite_stock <= a.seuil_alerte);
+  const initiales = plombier.nom.split(' ').map(n => n[0]).join('').toUpperCase();
 
   return (
     <div style={styles.shell}>
       <aside style={styles.sidebar}>
-        <nav style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button onClick={() => setActiveView('espace')} style={{ background: activeView === 'espace' ? '#fff' : 'transparent', color: activeView === 'espace' ? NAVY : '#fff', border: 'none', padding: '8px 12px', borderRadius: '8px' }}>Mon espace</button>
-          <button onClick={() => setActiveView('stock')} style={{ background: activeView === 'stock' ? '#fff' : 'transparent', color: activeView === 'stock' ? NAVY : '#fff', border: 'none', padding: '8px 12px', borderRadius: '8px' }}>Stock</button>
-          <button onClick={onLogout} style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.2)', border: 'none', padding: '8px 12px', borderRadius: '8px', color: '#fff' }}>Changer profil</button>
+        <div style={styles.logoWrap}>
+          <img src="https://sosfuitedeau.com/wp-content/uploads/2026/04/logo-removebg-preview.png" alt="Logo" style={{ height: '34px', objectFit: 'contain' }} />
+        </div>
+        <nav style={styles.nav}>
+          <button style={styles.navBtn(activeView === 'espace')} onClick={() => setActiveView('espace')}>
+            <TrendingDown size={16} /> Mon espace
+          </button>
+          <button style={styles.navBtn(activeView === 'stock')} onClick={() => setActiveView('stock')}>
+            <Package size={16} /> Stock
+          </button>
         </nav>
+        <div>
+          <button style={styles.logoutBtn} onClick={onLogout}><LogOut size={13} /> Changer profil</button>
+        </div>
       </aside>
+
       <main style={styles.main}>
-        <h1>Bonjour {plombier.nom}</h1>
+        <div>
+          <h1 style={styles.pageTitle}>Bonjour {plombier.nom}</h1>
+          <p style={styles.pageSub}>{activeView === 'espace' ? 'Déclarez ou gérez vos utilisations' : 'Consultez le stock disponible'}</p>
+        </div>
+
+        {activeView === 'espace' && (
+          <div style={styles.statsGrid}>
+            <div style={styles.stat}><div style={styles.statAccent(NAVY)} /><div style={styles.statVal}>{articles.length}</div><div style={styles.statLbl}>Articles</div></div>
+            <div style={styles.stat}><div style={styles.statAccent(DANGER)} /><div style={{ ...styles.statVal, color: stockBas.length ? DANGER : '#1a2332' }}>{stockBas.length}</div><div style={styles.statLbl}>Stock bas</div></div>
+            <div style={styles.stat}><div style={styles.statAccent(ORANGE)} /><div style={styles.statVal}>{sorties.length}</div><div style={styles.statLbl}>Mes sorties</div></div>
+          </div>
+        )}
+
+        {error && (
+          <div style={{
+            background: error.startsWith('✓') ? SUCCESS_BG : DANGER_BG,
+            border: `1px solid ${error.startsWith('✓') ? '#86efac' : '#fca5a5'}`,
+            borderRadius: '12px', padding: '12px', marginBottom: '20px',
+            color: error.startsWith('✓') ? SUCCESS : DANGER
+          }}>
+            {error}
+          </div>
+        )}
+
         {activeView === 'espace' && (
           <>
             <div style={styles.card}>
-              <h2>Déclarer une sortie</h2>
-              <select value={form.articleId} onChange={e => setForm({ ...form, articleId: e.target.value })} style={styles.select}>
-                <option value="">Choisir un article</option>
-                {articles.map(a => <option key={a.id} value={a.id}>{a.nom} (stock: {a.quantite_stock} {a.unite})</option>)}
-              </select>
-              <input type="number" min="1" placeholder="Quantité" value={form.quantite} onChange={e => setForm({ ...form, quantite: e.target.value })} style={styles.input} />
-              <input type="text" placeholder="Chantier" value={form.chantier} onChange={e => setForm({ ...form, chantier: e.target.value })} style={styles.input} />
-              <button onClick={handleSortie} style={styles.btnPrimary}>Confirmer</button>
-            </div>
-            <div style={styles.card}>
-              <h2>Mes sorties</h2>
-              <table style={styles.table}>
-                <thead><tr><th style={styles.th}>Article</th><th>Quantité</th><th>Chantier</th><th>Datvere</th><th></th></tr></thead>
-                <tbody>
-                  {sorties.map(s => (
-                    <tr key={s.id}>
-                      <td style={styles.td}>{s.articleNom}</td>
-                      <td style={styles.td}>{s.quantite}</td>
-                      <td style={styles.td}>{s.chantier}</td>
-                      <td style={styles.td}>{s.date}</td>
-                      <td style={styles.td}><button onClick={() => supprimerSortie(s)} style={styles.btnDanger}>Annuler</button></td>
-                    </tr>
+              <div style={styles.cardHead}>
+                <div style={styles.cardIcon}><TrendingDown size={14} color={NAVY} /></div>
+                <span style={styles.cardTitle}>Déclarer une utilisation</span>
+              </div>
+              <div style={styles.cardBody}>
+                <label style={styles.label}>Article utilisé</label>
+                <select style={styles.select} value={form.articleId} onChange={e => setForm({ ...form, articleId: e.target.value })}>
+                  <option value="">Choisir un article…</option>
+                  {articles.map(a => (
+                    <option key={a.id} value={a.id} disabled={a.quantite_stock <= 0}>
+                      {a.nom} — {a.quantite_stock} {a.unite}{a.quantite_stock <= 0 ? ' (épuisé)' : ''}
+                    </option>
                   ))}
-                </tbody>
-              </table>
+                </select>
+                <label style={styles.label}>Quantité</label>
+                <input style={styles.input} type="number" min="1" value={form.quantite} onChange={e => setForm({ ...form, quantite: e.target.value })} />
+                <label style={styles.label}>Chantier</label>
+                <input style={styles.input} type="text" placeholder="Nom ou numéro du chantier" value={form.chantier} onChange={e => setForm({ ...form, chantier: e.target.value })} />
+                <button style={styles.btnPrimary} onClick={handleSortie}><PlusCircle size={15} /> Confirmer la sortie</button>
+              </div>
+            </div>
+
+            <div style={styles.card}>
+              <div style={styles.cardHead}>
+                <div style={styles.cardIcon}><TrendingDown size={14} color={NAVY} /></div>
+                <span style={styles.cardTitle}>Mes dernières sorties</span>
+              </div>
+              <div style={styles.tableWrapper}>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Article</th>
+                      <th style={styles.th}>Qté</th>
+                      <th style={styles.th}>Chantier</th>
+                      <th style={styles.th}>Date</th>
+                      <th style={styles.th}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr><td colSpan="5" style={styles.td}>Chargement…</td></tr>
+                    ) : sorties.length === 0 ? (
+                      <tr><td colSpan="5" style={{ ...styles.td, textAlign: 'center' }}>Aucune sortie</td></tr>
+                    ) : (
+                      sorties.map(s => (
+                        <tr key={s.id}>
+                          {editingSortieId === s.id ? (
+                            <>
+                              <td style={styles.td}>{s.articleNom}</td>
+                              <td style={styles.td}>
+                                <input type="number" value={editForm.quantite} onChange={e => setEditForm({ ...editForm, quantite: e.target.value })} style={{ width: '80px', padding: '4px' }} />
+                              </td>
+                              <td style={styles.td}>
+                                <input type="text" value={editForm.chantier} onChange={e => setEditForm({ ...editForm, chantier: e.target.value })} style={{ width: '120px', padding: '4px' }} />
+                              </td>
+                              <td style={styles.td}>{s.date}</td>
+                              <td style={styles.td}>
+                                <button style={styles.btnSecondary} onClick={() => saveEdit(s)}><Save size={14} /> OK</button>
+                                <button style={styles.btnDanger} onClick={cancelEdit}><X size={14} /> Annuler</button>
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td style={styles.td}>{s.articleNom}</td>
+                              <td style={{ ...styles.td, color: DANGER, fontWeight: '700' }}>-{s.quantite}</td>
+                              <td style={styles.td}>{s.chantier}</td>
+                              <td style={styles.td}>{s.date}</td>
+                              <td style={styles.td}>
+                                <div style={styles.flexRow}>
+                                  <button style={styles.btnSecondary} onClick={() => startEdit(s)}><Edit size={14} /> Modifier</button>
+                                  <button style={styles.btnDanger} onClick={() => supprimerSortie(s)}><Trash2 size={14} /> Supprimer</button>
+                                </div>
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </>
         )}
+
         {activeView === 'stock' && (
           <div style={styles.card}>
-            <h2>Stock disponible</h2>
-            <table style={styles.table}>
-              <thead><tr><th>Article</th><th>Réf</th><th>Stock</th><th>Unité</th><th>Statut</th></tr></thead>
-              <tbody>
-                {articles.map(a => (
-                  <tr key={a.id}>
-                    <td>{a.nom}</td><td>{a.reference}</td><td>{a.quantite_stock}</td><td>{a.unite}</td>
-                    <td>{a.quantite_stock <= a.seuil_alerte ? 'Stock bas' : (a.quantite_stock <= a.seuil_alerte*2 ? 'Moyen' : 'OK')}</td>
+            <div style={styles.cardHead}>
+              <div style={styles.cardIcon}><Package size={14} color={NAVY} /></div>
+              <span style={styles.cardTitle}>Stock disponible</span>
+              {stockBas.length > 0 && (
+                <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: DANGER, fontWeight: '600' }}>
+                  <AlertTriangle size={12} /> {stockBas.length} article(s) bas
+                </span>
+              )}
+            </div>
+            <div style={styles.tableWrapper}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Article</th>
+                    <th style={styles.th}>Réf</th>
+                    <th style={styles.th}>Stock</th>
+                    <th style={styles.th}>Unité</th>
+                    <th style={styles.th}>Statut</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {articles.map(a => {
+                    const type = a.quantite_stock <= a.seuil_alerte ? 'low' : (a.quantite_stock <= a.seuil_alerte * 2 ? 'mid' : 'ok');
+                    const label = { ok: 'OK', mid: 'Moyen', low: 'Stock bas' }[type];
+                    return (
+                      <tr key={a.id}>
+                        <td style={{ ...styles.td, fontWeight: '500' }}>{a.nom}</td>
+                        <td style={styles.td}>{a.reference || '—'}</td>
+                        <td style={{ ...styles.td, fontWeight: '700', color: type === 'low' ? DANGER : '#1a2332' }}>{a.quantite_stock}</td>
+                        <td style={styles.td}>{a.unite}</td>
+                        <td style={styles.td}><span style={styles.badge(type)}>{label}</span></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
-        {error && <div style={{ color: error.startsWith('✓') ? SUCCESS : DANGER, marginTop: '16px' }}>{error}</div>}
       </main>
     </div>
   );
