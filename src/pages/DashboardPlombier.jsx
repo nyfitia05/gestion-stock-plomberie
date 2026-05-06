@@ -160,7 +160,7 @@ export default function DashboardPlombier({ onLogout }) {
         const docSnap = snap.docs[0];
         setPlombier({ id: docSnap.id, ...docSnap.data() });
       } else {
-        setError('Aucun plombier trouvé. Veuillez en créer un dans l'onglet Plombiers (admin).');
+        setError("Aucun plombier trouvé. Veuillez en créer un dans l'onglet Plombiers (admin).");
       }
     };
     fetchPlombier();
