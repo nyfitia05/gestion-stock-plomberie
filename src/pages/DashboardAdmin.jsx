@@ -3,7 +3,6 @@ import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy 
 import { db } from '../lib/firebase';
 import { Package, AlertTriangle, TrendingDown, Truck, PlusCircle, History, Users, LogOut, LayoutDashboard, Edit, Trash2, Save, X, Menu } from 'lucide-react';
 
-// ----- COULEURS -----
 const NAVY = '#1a3a5c';
 const ORANGE = '#e85d24';
 const BG = '#f0f4f9';
@@ -15,30 +14,11 @@ const SUCCESS = '#16a34a';
 const SUCCESS_BG = '#dcfce7';
 const WARNING = '#d97706';
 
-// ----- STYLES DE BASE -----
 const baseStyles = {
   shell: { display: 'flex', minHeight: '100vh', background: BG, fontFamily: "'DM Sans','Segoe UI',sans-serif", position: 'relative' },
-  sidebar: {
-    width: '230px',
-    flexShrink: 0,
-    background: NAVY,
-    borderRadius: '0 24px 24px 0',
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '24px 14px',
-    position: 'sticky',
-    top: 0,
-    height: '100vh',
-    boxShadow: '4px 0 20px rgba(26,58,92,0.12)',
-  },
+  sidebar: { width: '230px', flexShrink: 0, background: NAVY, borderRadius: '0 24px 24px 0', display: 'flex', flexDirection: 'column', padding: '24px 14px', position: 'sticky', top: 0, height: '100vh', boxShadow: '4px 0 20px rgba(26,58,92,0.12)' },
   logoWrap: { padding: '0 8px 22px', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '16px' },
-  navBtn: (active) => ({
-    display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 12px',
-    borderRadius: '12px', marginBottom: '4px', cursor: 'pointer', border: 'none',
-    background: active ? 'rgba(255,255,255,0.13)' : 'transparent',
-    color: active ? '#fff' : 'rgba(255,255,255,0.55)',
-    fontSize: '13px', fontWeight: active ? '600' : '400', textAlign: 'left'
-  }),
+  navBtn: (active) => ({ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '10px 12px', borderRadius: '12px', marginBottom: '4px', cursor: 'pointer', border: 'none', background: active ? 'rgba(255,255,255,0.13)' : 'transparent', color: active ? '#fff' : 'rgba(255,255,255,0.55)', fontSize: '13px', fontWeight: active ? '600' : '400', textAlign: 'left' }),
   main: { flex: 1, padding: '28px 32px', minWidth: 0 },
   mainMobile: { padding: '70px 16px 20px' },
   pageTitle: { fontSize: '22px', fontWeight: '700', color: '#1a2332', margin: '0 0 4px' },
@@ -60,11 +40,7 @@ const baseStyles = {
   th: { padding: '8px 12px', textAlign: 'left', color: MUTED, fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#f8fafc', borderBottom: `1px solid ${BORDER}` },
   td: { padding: '10px 12px', borderBottom: `1px solid ${BORDER}`, color: '#1a2332', fontSize: '13px' },
   badge: (type) => {
-    const map = {
-      ok: { bg: SUCCESS_BG, color: SUCCESS },
-      low: { bg: DANGER_BG, color: DANGER },
-      mid: { bg: '#fef3c7', color: WARNING }
-    };
+    const map = { ok: { bg: SUCCESS_BG, color: SUCCESS }, low: { bg: DANGER_BG, color: DANGER }, mid: { bg: '#fef3c7', color: WARNING } };
     const { bg, color } = map[type] || map.ok;
     return { display: 'inline-block', padding: '3px 9px', borderRadius: '20px', fontSize: '11px', fontWeight: '600', background: bg, color: color };
   },
@@ -77,24 +53,11 @@ const baseStyles = {
   btnIcon: { background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px' },
   alertBanner: { background: DANGER_BG, border: `1px solid #fca5a5`, borderRadius: '14px', padding: '14px 18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
   bonRow: { display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center', flexWrap: 'wrap' },
-  hamburger: {
-    position: 'fixed', top: '16px', left: '16px', zIndex: 1200,
-    background: NAVY, border: 'none', borderRadius: '12px', padding: '8px',
-    color: '#fff', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-  },
-  drawer: {
-    position: 'fixed', top: 0, left: 0, bottom: 0, width: '260px',
-    background: NAVY, zIndex: 1100, transform: 'translateX(-100%)',
-    transition: 'transform 0.25s ease', display: 'flex', flexDirection: 'column',
-    padding: '24px 14px', overflowY: 'auto', boxShadow: '2px 0 20px rgba(0,0,0,0.2)'
-  },
+  hamburger: { position: 'fixed', top: '16px', left: '16px', zIndex: 1200, background: NAVY, border: 'none', borderRadius: '12px', padding: '8px', color: '#fff', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
+  drawer: { position: 'fixed', top: 0, left: 0, bottom: 0, width: '260px', background: NAVY, zIndex: 1100, transform: 'translateX(-100%)', transition: 'transform 0.25s ease', display: 'flex', flexDirection: 'column', padding: '24px 14px', overflowY: 'auto', boxShadow: '2px 0 20px rgba(0,0,0,0.2)' },
   drawerOpen: { transform: 'translateX(0)' },
-  overlay: {
-    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)', zIndex: 1050,
-    display: 'none'
-  },
-  overlayOpen: { display: 'block' }
+  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)', zIndex: 1050, display: 'none' },
+  overlayOpen: { display: 'block' },
 };
 
 const NAV = [
@@ -122,7 +85,6 @@ export default function DashboardAdmin({ onLogout }) {
   const [editingArticleId, setEditingArticleId] = useState(null);
   const [editSeuil, setEditSeuil] = useState('');
 
-  // Détection mobile
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
@@ -130,11 +92,7 @@ export default function DashboardAdmin({ onLogout }) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Fermer le drawer après navigation sur mobile
-  useEffect(() => {
-    if (isMobile) setDrawerOpen(false);
-  }, [tab, isMobile]);
-
+  useEffect(() => { if (isMobile) setDrawerOpen(false); }, [tab, isMobile]);
   useEffect(() => { loadAll(); }, []);
 
   async function loadAll() {
@@ -150,9 +108,7 @@ export default function DashboardAdmin({ onLogout }) {
       setSorties(sortSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       setPlombiers(plombSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       setBons(bonSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-    } catch (e) {
-      alert('Erreur chargement : ' + e.message);
-    }
+    } catch (e) { alert('Erreur chargement : ' + e.message); }
     setLoading(false);
   }
 
@@ -165,13 +121,15 @@ export default function DashboardAdmin({ onLogout }) {
     setSaving(false);
   }
 
+  // MODIFIÉ : enregistre aussi la date de commande sur chaque article
   async function validerBon() {
     if (!bon.fournisseur || bon.lignes.length === 0) return alert('Fournisseur et au moins une ligne requis');
     setSaving(true);
+    const dateCommande = new Date().toLocaleDateString('fr-FR');
     await addDoc(collection(db, 'bons_commande'), {
       fournisseur: bon.fournisseur,
       reference_bon: bon.reference_bon,
-      date: new Date().toLocaleDateString('fr-FR'),
+      date: dateCommande,
       lignes: bon.lignes,
     });
     for (const ligne of bon.lignes) {
@@ -180,6 +138,7 @@ export default function DashboardAdmin({ onLogout }) {
       if (!article) continue;
       await updateDoc(doc(db, 'articles', ligne.articleId), {
         quantite_stock: article.quantite_stock + Number(ligne.quantite),
+        derniere_commande: dateCommande,
       });
     }
     setBon({ fournisseur: '', reference_bon: '', lignes: [] });
@@ -228,7 +187,6 @@ export default function DashboardAdmin({ onLogout }) {
     return ['ok', 'OK'];
   };
 
-  // Contenu de la sidebar (réutilisable)
   const SidebarContent = () => (
     <>
       <div style={baseStyles.logoWrap}>
@@ -250,7 +208,6 @@ export default function DashboardAdmin({ onLogout }) {
     </>
   );
 
-  // Rendu Dashboard
   const renderDashboard = () => (
     <>
       <div style={{ ...baseStyles.statsGrid, ...(isMobile ? baseStyles.statsGridMobile : {}) }}>
@@ -303,6 +260,7 @@ export default function DashboardAdmin({ onLogout }) {
     </>
   );
 
+  // MODIFIÉ : Stock affiche les articles + colonne "Dernière commande"
   const renderStock = () => (
     <div style={baseStyles.card}>
       <div style={baseStyles.cardHead}>
@@ -311,9 +269,22 @@ export default function DashboardAdmin({ onLogout }) {
       </div>
       <div style={baseStyles.tableWrapper}>
         <table style={baseStyles.table}>
-          <thead><tr><th style={baseStyles.th}>Nom</th><th style={baseStyles.th}>Réf</th><th style={baseStyles.th}>Fournisseur</th><th style={baseStyles.th}>Qté</th><th style={baseStyles.th}>Seuil</th><th style={baseStyles.th}>Unité</th><th style={baseStyles.th}>Statut</th><th style={baseStyles.th}>Actions</th></tr></thead>
+          <thead>
+            <tr>
+              <th style={baseStyles.th}>Nom</th>
+              <th style={baseStyles.th}>Réf</th>
+              <th style={baseStyles.th}>Fournisseur</th>
+              <th style={baseStyles.th}>Qté</th>
+              <th style={baseStyles.th}>Seuil</th>
+              <th style={baseStyles.th}>Unité</th>
+              <th style={baseStyles.th}>Statut</th>
+              <th style={baseStyles.th}>Dernière commande</th>
+              <th style={baseStyles.th}>Actions</th>
+            </tr>
+          </thead>
           <tbody>
-            {articles.length === 0 ? <tr><td colSpan={8} style={{ ...baseStyles.td, textAlign: 'center', color: MUTED }}>Aucun article</td></tr>
+            {articles.length === 0
+              ? <tr><td colSpan={9} style={{ ...baseStyles.td, textAlign: 'center', color: MUTED }}>Aucun article</td></tr>
               : articles.map(a => {
                 const [type, label] = getBadge(a);
                 return (
@@ -324,7 +295,7 @@ export default function DashboardAdmin({ onLogout }) {
                     <td style={{ ...baseStyles.td, fontWeight: '700', color: type === 'low' ? DANGER : '#1a2332' }}>{a.quantite_stock}</td>
                     <td style={baseStyles.td}>
                       {editingArticleId === a.id ? (
-                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                           <input type="number" value={editSeuil} onChange={e => setEditSeuil(e.target.value)} style={{ width: '70px', padding: '4px', borderRadius: '4px', border: `1px solid ${BORDER}` }} autoFocus />
                           <button onClick={() => updateArticleSeuil(a.id, editSeuil)} style={baseStyles.btnIcon}><Save size={14} color={SUCCESS} /></button>
                           <button onClick={() => setEditingArticleId(null)} style={baseStyles.btnIcon}><X size={14} color={DANGER} /></button>
@@ -338,6 +309,11 @@ export default function DashboardAdmin({ onLogout }) {
                     </td>
                     <td style={baseStyles.td}>{a.unite}</td>
                     <td style={baseStyles.td}><span style={baseStyles.badge(type)}>{label}</span></td>
+                    <td style={{ ...baseStyles.td, color: MUTED, fontSize: '12px' }}>
+                      {a.derniere_commande
+                        ? <span style={{ background: '#e8f0f8', color: NAVY, padding: '2px 8px', borderRadius: '8px', fontSize: '11px' }}>{a.derniere_commande}</span>
+                        : <span style={{ color: MUTED }}>Jamais commandé</span>}
+                    </td>
                     <td style={baseStyles.td}><button onClick={() => deleteArticle(a.id, a.nom)} style={{ ...baseStyles.btnIcon, color: DANGER }}><Trash2 size={16} /></button></td>
                   </tr>
                 );
@@ -345,52 +321,60 @@ export default function DashboardAdmin({ onLogout }) {
           </tbody>
         </table>
       </div>
-      <div style={baseStyles.cardBody}>
-        <p style={{ fontSize: '11px', fontWeight: '600', color: MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Ajouter un article</p>
-        <div style={baseStyles.formGrid}>
-          <input style={baseStyles.input} placeholder="Nom *" value={newArt.nom} onChange={e => setNewArt({ ...newArt, nom: e.target.value })} />
-          <input style={baseStyles.input} placeholder="Référence" value={newArt.reference} onChange={e => setNewArt({ ...newArt, reference: e.target.value })} />
-          <input style={baseStyles.input} placeholder="Fournisseur" value={newArt.fournisseur} onChange={e => setNewArt({ ...newArt, fournisseur: e.target.value })} />
-          <input style={baseStyles.input} placeholder="Unité (m, u, kg…)" value={newArt.unite} onChange={e => setNewArt({ ...newArt, unite: e.target.value })} />
-          <input style={baseStyles.input} type="number" placeholder="Seuil alerte" value={newArt.seuil_alerte} onChange={e => setNewArt({ ...newArt, seuil_alerte: e.target.value })} />
-          <button style={{ ...baseStyles.btnNavy, opacity: saving ? 0.6 : 1 }} onClick={ajouterArticle} disabled={saving}>
-            <PlusCircle size={14} /> {saving ? 'Enregistrement…' : 'Ajouter'}
-          </button>
-        </div>
-      </div>
     </div>
   );
 
+  // MODIFIÉ : Commandes = ajout article + réception livraison
   const renderCommandes = () => (
-    <div style={baseStyles.card}>
-      <div style={baseStyles.cardHead}>
-        <div style={baseStyles.cardTitle}><div style={baseStyles.cardIcon}><Truck size={14} color={NAVY} /></div>Réceptionner un bon de commande</div>
-      </div>
-      <div style={baseStyles.cardBody}>
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
-          <input style={{ ...baseStyles.input, flex: 1, minWidth: '160px' }} placeholder="Fournisseur *" value={bon.fournisseur} onChange={e => setBon({ ...bon, fournisseur: e.target.value })} />
-          <input style={{ ...baseStyles.input, flex: 1, minWidth: '160px' }} placeholder="Référence bon" value={bon.reference_bon} onChange={e => setBon({ ...bon, reference_bon: e.target.value })} />
+    <>
+      <div style={baseStyles.card}>
+        <div style={baseStyles.cardHead}>
+          <div style={baseStyles.cardTitle}><div style={baseStyles.cardIcon}><Package size={14} color={NAVY} /></div>Ajouter un article au catalogue</div>
         </div>
-        {bon.lignes.map((ligne, idx) => (
-          <div key={idx} style={baseStyles.bonRow}>
-            <select style={{ ...baseStyles.select, flex: 1 }} value={ligne.articleId} onChange={e => { const l = [...bon.lignes]; l[idx].articleId = e.target.value; setBon({ ...bon, lignes: l }); }}>
-              <option value="">Choisir un article…</option>
-              {articles.map(a => <option key={a.id} value={a.id}>{a.nom}</option>)}
-            </select>
-            <input style={{ ...baseStyles.input, width: '90px', flexShrink: 0 }} type="number" placeholder="Qté" value={ligne.quantite} onChange={e => { const l = [...bon.lignes]; l[idx].quantite = e.target.value; setBon({ ...bon, lignes: l }); }} />
-            <button style={{ ...baseStyles.btnDanger, flexShrink: 0 }} onClick={() => setBon({ ...bon, lignes: bon.lignes.filter((_, i) => i !== idx) })}>✕</button>
+        <div style={baseStyles.cardBody}>
+          <div style={baseStyles.formGrid}>
+            <input style={baseStyles.input} placeholder="Nom *" value={newArt.nom} onChange={e => setNewArt({ ...newArt, nom: e.target.value })} />
+            <input style={baseStyles.input} placeholder="Référence" value={newArt.reference} onChange={e => setNewArt({ ...newArt, reference: e.target.value })} />
+            <input style={baseStyles.input} placeholder="Fournisseur" value={newArt.fournisseur} onChange={e => setNewArt({ ...newArt, fournisseur: e.target.value })} />
+            <input style={baseStyles.input} placeholder="Unité (m, u, kg…)" value={newArt.unite} onChange={e => setNewArt({ ...newArt, unite: e.target.value })} />
+            <input style={baseStyles.input} type="number" placeholder="Seuil alerte" value={newArt.seuil_alerte} onChange={e => setNewArt({ ...newArt, seuil_alerte: e.target.value })} />
+            <button style={{ ...baseStyles.btnNavy, opacity: saving ? 0.6 : 1 }} onClick={ajouterArticle} disabled={saving}>
+              <PlusCircle size={14} /> {saving ? 'Enregistrement…' : 'Ajouter'}
+            </button>
           </div>
-        ))}
-        <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
-          <button style={{ ...baseStyles.btnNavy, background: '#f0f4f9', color: NAVY }} onClick={() => setBon(b => ({ ...b, lignes: [...b.lignes, { articleId: '', quantite: '' }] }))}>
-            <PlusCircle size={14} /> Ajouter ligne
-          </button>
-          <button style={{ ...baseStyles.btnOrange, opacity: saving ? 0.6 : 1 }} onClick={validerBon} disabled={saving}>
-            <Truck size={14} /> {saving ? 'Enregistrement…' : 'Valider le bon'}
-          </button>
         </div>
       </div>
-    </div>
+
+      <div style={baseStyles.card}>
+        <div style={baseStyles.cardHead}>
+          <div style={baseStyles.cardTitle}><div style={baseStyles.cardIcon}><Truck size={14} color={NAVY} /></div>Réceptionner une livraison</div>
+        </div>
+        <div style={baseStyles.cardBody}>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
+            <input style={{ ...baseStyles.input, flex: 1, minWidth: '160px' }} placeholder="Fournisseur *" value={bon.fournisseur} onChange={e => setBon({ ...bon, fournisseur: e.target.value })} />
+            <input style={{ ...baseStyles.input, flex: 1, minWidth: '160px' }} placeholder="Référence bon" value={bon.reference_bon} onChange={e => setBon({ ...bon, reference_bon: e.target.value })} />
+          </div>
+          {bon.lignes.map((ligne, idx) => (
+            <div key={idx} style={baseStyles.bonRow}>
+              <select style={{ ...baseStyles.select, flex: 1 }} value={ligne.articleId} onChange={e => { const l = [...bon.lignes]; l[idx].articleId = e.target.value; setBon({ ...bon, lignes: l }); }}>
+                <option value="">Choisir un article…</option>
+                {articles.map(a => <option key={a.id} value={a.id}>{a.nom}</option>)}
+              </select>
+              <input style={{ ...baseStyles.input, width: '90px', flexShrink: 0 }} type="number" placeholder="Qté" value={ligne.quantite} onChange={e => { const l = [...bon.lignes]; l[idx].quantite = e.target.value; setBon({ ...bon, lignes: l }); }} />
+              <button style={{ ...baseStyles.btnDanger, flexShrink: 0 }} onClick={() => setBon({ ...bon, lignes: bon.lignes.filter((_, i) => i !== idx) })}>✕</button>
+            </div>
+          ))}
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+            <button style={{ ...baseStyles.btnNavy, background: '#f0f4f9', color: NAVY }} onClick={() => setBon(b => ({ ...b, lignes: [...b.lignes, { articleId: '', quantite: '' }] }))}>
+              <PlusCircle size={14} /> Ajouter ligne
+            </button>
+            <button style={{ ...baseStyles.btnOrange, opacity: saving ? 0.6 : 1 }} onClick={validerBon} disabled={saving}>
+              <Truck size={14} /> {saving ? 'Enregistrement…' : 'Valider le bon'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 
   const renderSorties = () => (
@@ -493,23 +477,17 @@ export default function DashboardAdmin({ onLogout }) {
 
   return (
     <>
-      {/* Overlay et drawer pour mobile */}
       <div style={{ ...baseStyles.overlay, ...(drawerOpen && baseStyles.overlayOpen) }} onClick={() => setDrawerOpen(false)} />
       <div style={{ ...baseStyles.drawer, ...(drawerOpen && baseStyles.drawerOpen) }}>
         <SidebarContent />
       </div>
-
-      {/* Bouton hamburger (mobile uniquement) */}
       {isMobile && (
         <button style={baseStyles.hamburger} onClick={() => setDrawerOpen(true)}>
           <Menu size={24} />
         </button>
       )}
-
       <div style={baseStyles.shell}>
-        {/* Sidebar desktop */}
         {!isMobile && <aside style={baseStyles.sidebar}><SidebarContent /></aside>}
-
         <main style={{ ...baseStyles.main, ...(isMobile && baseStyles.mainMobile) }}>
           <div style={{ marginBottom: '24px' }}>
             <h1 style={baseStyles.pageTitle}>{NAV.find(n => n.id === tab)?.label}</h1>
