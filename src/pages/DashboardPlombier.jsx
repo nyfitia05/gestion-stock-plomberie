@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Package, TrendingDown, PlusCircle, AlertTriangle, LogOut, Undo } from 'lucide-react';
+import { Package, TrendingDown, PlusCircle, AlertTriangle, LogOut, Edit, Trash2, Save, X } from 'lucide-react';
 
 // ----- COULEURS -----
 const NAVY = '#1a3a5c';
@@ -28,78 +28,17 @@ const useIsMobile = () => {
   return isMobile;
 };
 
-// ----- STYLES (adaptés mobile + desktop) -----
+// ----- STYLES (version simplifiée mais conservant le design) -----
 const getStyles = (isMobile) => ({
-  shell: {
-    display: 'flex',
-    flexDirection: isMobile ? 'column' : 'row',
-    minHeight: '100vh',
-    background: BG,
-    fontFamily: "'DM Sans','Segoe UI',sans-serif",
-  },
-  sidebar: {
-    width: isMobile ? '100%' : '230px',
-    flexShrink: 0,
-    background: NAVY,
-    borderRadius: isMobile ? '0 0 20px 20px' : '0 24px 24px 0',
-    display: 'flex',
-    flexDirection: isMobile ? 'row' : 'column',
-    alignItems: isMobile ? 'center' : 'stretch',
-    padding: isMobile ? '10px 14px' : '24px 14px',
-    position: isMobile ? 'relative' : 'sticky',
-    top: 0,
-    height: isMobile ? 'auto' : '100vh',
-    boxShadow: isMobile
-      ? '0 4px 20px rgba(26,58,92,0.12)'
-      : '4px 0 20px rgba(26,58,92,0.12)',
-    zIndex: 10,
-  },
-  logoWrap: {
-    padding: isMobile ? '0 12px 0 0' : '0 8px 22px',
-    borderBottom: isMobile ? 'none' : '1px solid rgba(255,255,255,0.1)',
-    borderRight: isMobile ? '1px solid rgba(255,255,255,0.1)' : 'none',
-    marginBottom: isMobile ? 0 : '16px',
-    marginRight: isMobile ? '12px' : 0,
-    display: 'flex',
-    alignItems: 'center',
-  },
-  nav: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: isMobile ? 'row' : 'column',
-    gap: isMobile ? '6px' : 0,
-    alignItems: isMobile ? 'center' : 'stretch',
-  },
-  navBtn: (active) => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    width: isMobile ? 'auto' : '100%',
-    padding: isMobile ? '8px 12px' : '10px 12px',
-    borderRadius: '12px',
-    marginBottom: isMobile ? 0 : '4px',
-    cursor: 'pointer',
-    border: 'none',
-    background: active ? 'rgba(255,255,255,0.13)' : 'transparent',
-    color: active ? '#fff' : 'rgba(255,255,255,0.55)',
-    fontSize: '13px',
-    fontWeight: active ? '600' : '400',
-    textAlign: 'left',
-    whiteSpace: 'nowrap',
-  }),
-  main: {
-    flex: 1,
-    padding: isMobile ? '18px 14px' : '28px 32px',
-    minWidth: 0,
-  },
+  shell: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', minHeight: '100vh', background: BG, fontFamily: "'DM Sans','Segoe UI',sans-serif" },
+  sidebar: { width: isMobile ? '100%' : '230px', flexShrink: 0, background: NAVY, borderRadius: isMobile ? '0 0 20px 20px' : '0 24px 24px 0', display: 'flex', flexDirection: isMobile ? 'row' : 'column', alignItems: isMobile ? 'center' : 'stretch', padding: isMobile ? '10px 14px' : '24px 14px', position: isMobile ? 'relative' : 'sticky', top: 0, height: isMobile ? 'auto' : '100vh', boxShadow: isMobile ? '0 4px 20px rgba(26,58,92,0.12)' : '4px 0 20px rgba(26,58,92,0.12)', zIndex: 10 },
+  logoWrap: { padding: isMobile ? '0 12px 0 0' : '0 8px 22px', borderBottom: isMobile ? 'none' : '1px solid rgba(255,255,255,0.1)', borderRight: isMobile ? '1px solid rgba(255,255,255,0.1)' : 'none', marginBottom: isMobile ? 0 : '16px', marginRight: isMobile ? '12px' : 0, display: 'flex', alignItems: 'center' },
+  nav: { flex: 1, display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: isMobile ? '6px' : 0, alignItems: isMobile ? 'center' : 'stretch' },
+  navBtn: (active) => ({ display: 'flex', alignItems: 'center', gap: '10px', width: isMobile ? 'auto' : '100%', padding: isMobile ? '8px 12px' : '10px 12px', borderRadius: '12px', marginBottom: isMobile ? 0 : '4px', cursor: 'pointer', border: 'none', background: active ? 'rgba(255,255,255,0.13)' : 'transparent', color: active ? '#fff' : 'rgba(255,255,255,0.55)', fontSize: '13px', fontWeight: active ? '600' : '400', textAlign: 'left', whiteSpace: 'nowrap' }),
+  main: { flex: 1, padding: isMobile ? '18px 14px' : '28px 32px', minWidth: 0 },
   pageTitle: { fontSize: '22px', fontWeight: '700', color: '#1a2332', margin: '0 0 4px' },
   pageSub: { fontSize: '13px', color: MUTED, margin: '0 0 20px' },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: isMobile ? 'repeat(3,1fr)' : 'repeat(3,1fr)',
-    gap: isMobile ? '10px' : '16px',
-    marginBottom: '20px',
-  },
+  statsGrid: { display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3,1fr)' : 'repeat(3,1fr)', gap: isMobile ? '10px' : '16px', marginBottom: '20px' },
   stat: { background: '#fff', borderRadius: '16px', border: `1px solid ${BORDER}`, padding: '20px', position: 'relative', overflow: 'hidden' },
   statAccent: (c) => ({ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: c }),
   statVal: { fontSize: '28px', fontWeight: '700', color: '#1a2332', lineHeight: 1, marginBottom: '4px' },
@@ -113,33 +52,19 @@ const getStyles = (isMobile) => ({
   input: { padding: '9px 12px', border: `1px solid ${BORDER}`, borderRadius: '10px', fontSize: '13px', background: '#fff', width: '100%', boxSizing: 'border-box', marginBottom: '12px', outline: 'none' },
   select: { padding: '9px 12px', border: `1px solid ${BORDER}`, borderRadius: '10px', fontSize: '13px', background: '#fff', width: '100%', boxSizing: 'border-box', marginBottom: '12px', outline: 'none' },
   btnPrimary: { background: NAVY, color: '#fff', border: 'none', borderRadius: '10px', padding: '9px 16px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', width: '100%', justifyContent: 'center' },
-  btnDanger: { background: DANGER_BG, color: DANGER, border: 'none', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '500px' },
+  btnSecondary: { background: '#f0f4f9', color: NAVY, border: 'none', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' },
+  btnDanger: { background: DANGER_BG, color: DANGER, border: 'none', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '600px' },
   th: { padding: '8px 12px', textAlign: 'left', color: MUTED, fontWeight: '600', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', background: '#f8fafc', borderBottom: `1px solid ${BORDER}` },
   td: { padding: '10px 12px', borderBottom: `1px solid ${BORDER}`, color: '#1a2332', fontSize: '13px' },
   badge: (type) => {
-    const map = {
-      ok: { bg: SUCCESS_BG, color: SUCCESS },
-      low: { bg: DANGER_BG, color: DANGER },
-      mid: { bg: '#fef3c7', color: WARNING }
-    };
+    const map = { ok: { bg: SUCCESS_BG, color: SUCCESS }, low: { bg: DANGER_BG, color: DANGER }, mid: { bg: '#fef3c7', color: WARNING } };
     const { bg, color } = map[type] || map.ok;
     return { display: 'inline-block', padding: '3px 9px', borderRadius: '20px', fontSize: '11px', fontWeight: '600', background: bg, color: color };
   },
-  logoutBtn: {
-    background: 'rgba(255,255,255,0.15)',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '6px 12px',
-    fontSize: '12px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-    marginLeft: isMobile ? 'auto' : 0,
-  },
+  logoutBtn: { background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', marginLeft: isMobile ? 'auto' : 0 },
   tableWrapper: { overflowX: 'auto', width: '100%' },
+  flexRow: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
 });
 
 export default function DashboardPlombier({ onLogout }) {
@@ -152,6 +77,8 @@ export default function DashboardPlombier({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeView, setActiveView] = useState('espace');
+  const [editingSortieId, setEditingSortieId] = useState(null);
+  const [editForm, setEditForm] = useState({ quantite: '', chantier: '' });
 
   // Charger le premier plombier
   useEffect(() => {
@@ -168,7 +95,6 @@ export default function DashboardPlombier({ onLogout }) {
     fetchPlombier();
   }, []);
 
-  // Charger articles + sorties
   const loadData = async () => {
     if (!plombier) return;
     setLoading(true);
@@ -193,7 +119,7 @@ export default function DashboardPlombier({ onLogout }) {
     if (plombier) loadData();
   }, [plombier]);
 
-  // Déclarer une sortie
+  // Déclarer une nouvelle sortie
   const handleSortie = async () => {
     setError('');
     if (!form.articleId || !form.quantite || !form.chantier) {
@@ -228,33 +154,79 @@ export default function DashboardPlombier({ onLogout }) {
     }
   };
 
-  // Annuler une sortie (supprimer et restituer le stock)
-  const annulerSortie = async (sortie) => {
+  // Supprimer une sortie (annuler et restituer le stock)
+  const supprimerSortie = async (sortie) => {
     if (!confirm(`Annuler la sortie de ${sortie.quantite} "${sortie.articleNom}" ? Le stock sera remis.`)) return;
     try {
-      // Récupérer l'article actuel
+      // Restituer le stock
       const articleRef = doc(db, 'articles', sortie.articleId);
       const articleSnap = await getDocs(query(collection(db, 'articles'), where('id', '==', sortie.articleId)));
-      let article = null;
       if (!articleSnap.empty) {
-        article = { id: articleSnap.docs[0].id, ...articleSnap.docs[0].data() };
+        const article = articleSnap.docs[0].data();
+        await updateDoc(doc(db, 'articles', sortie.articleId), {
+          quantite_stock: article.quantite_stock + sortie.quantite,
+        });
       } else {
-        // Si l'article a été supprimé, on ne peut pas restituer
-        setError('Impossible de restituer le stock, l’article n’existe plus.');
-        return;
+        setError('Article introuvable, stock non restitué.');
       }
-      // Restituer le stock
-      await updateDoc(doc(db, 'articles', sortie.articleId), {
-        quantite_stock: article.quantite_stock + sortie.quantite,
-      });
-      // Supprimer la sortie
       await deleteDoc(doc(db, 'sorties', sortie.id));
       await loadData();
-      setError(`✓ Sortie annulée : ${sortie.quantite} ${article.unite} remis en stock.`);
+      setError(`✓ Sortie annulée : ${sortie.quantite} remis en stock.`);
       setTimeout(() => setError(''), 3000);
     } catch (err) {
       setError('Erreur lors de l’annulation : ' + err.message);
     }
+  };
+
+  // Ouvrir le formulaire de modification
+  const startEdit = (sortie) => {
+    setEditingSortieId(sortie.id);
+    setEditForm({ quantite: sortie.quantite, chantier: sortie.chantier });
+  };
+
+  // Enregistrer la modification
+  const saveEdit = async (sortie) => {
+    const newQuantite = Number(editForm.quantite);
+    if (isNaN(newQuantite) || newQuantite <= 0) {
+      setError('Quantité invalide');
+      return;
+    }
+    if (!editForm.chantier.trim()) {
+      setError('Chantier requis');
+      return;
+    }
+    // Vérifier le stock si la quantité augmente
+    const article = articles.find(a => a.id === sortie.articleId);
+    if (!article) {
+      setError('Article introuvable');
+      return;
+    }
+    const difference = newQuantite - sortie.quantite;
+    if (difference > 0 && article.quantite_stock < difference) {
+      setError(`Stock insuffisant pour augmenter de ${difference} (reste ${article.quantite_stock})`);
+      return;
+    }
+    try {
+      // Mettre à jour la sortie
+      await updateDoc(doc(db, 'sorties', sortie.id), {
+        quantite: newQuantite,
+        chantier: editForm.chantier,
+      });
+      // Ajuster le stock
+      await updateDoc(doc(db, 'articles', sortie.articleId), {
+        quantite_stock: article.quantite_stock - difference,
+      });
+      await loadData();
+      setEditingSortieId(null);
+      setError(`✓ Sortie modifiée : nouvelle quantité ${newQuantite} ${article.unite}`);
+      setTimeout(() => setError(''), 3000);
+    } catch (err) {
+      setError('Erreur modification : ' + err.message);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingSortieId(null);
   };
 
   if (error && !plombier) return <div style={{ padding: '40px', color: DANGER }}>{error}</div>;
@@ -285,26 +257,14 @@ export default function DashboardPlombier({ onLogout }) {
       <main style={styles.main}>
         <div>
           <h1 style={styles.pageTitle}>Bonjour {plombier.nom}</h1>
-          <p style={styles.pageSub}>{activeView === 'espace' ? 'Déclarez vos utilisations et gérez vos sorties' : 'Consultez le stock disponible'}</p>
+          <p style={styles.pageSub}>{activeView === 'espace' ? 'Déclarez ou gérez vos utilisations' : 'Consultez le stock disponible'}</p>
         </div>
 
         {activeView === 'espace' && (
           <div style={styles.statsGrid}>
-            <div style={styles.stat}>
-              <div style={styles.statAccent(NAVY)} />
-              <div style={styles.statVal}>{articles.length}</div>
-              <div style={styles.statLbl}>Articles</div>
-            </div>
-            <div style={styles.stat}>
-              <div style={styles.statAccent(DANGER)} />
-              <div style={{ ...styles.statVal, color: stockBas.length ? DANGER : '#1a2332' }}>{stockBas.length}</div>
-              <div style={styles.statLbl}>Stock bas</div>
-            </div>
-            <div style={styles.stat}>
-              <div style={styles.statAccent(ORANGE)} />
-              <div style={styles.statVal}>{sorties.length}</div>
-              <div style={styles.statLbl}>Mes sorties</div>
-            </div>
+            <div style={styles.stat}><div style={styles.statAccent(NAVY)} /><div style={styles.statVal}>{articles.length}</div><div style={styles.statLbl}>Articles</div></div>
+            <div style={styles.stat}><div style={styles.statAccent(DANGER)} /><div style={{ ...styles.statVal, color: stockBas.length ? DANGER : '#1a2332' }}>{stockBas.length}</div><div style={styles.statLbl}>Stock bas</div></div>
+            <div style={styles.stat}><div style={styles.statAccent(ORANGE)} /><div style={styles.statVal}>{sorties.length}</div><div style={styles.statLbl}>Mes sorties</div></div>
           </div>
         )}
 
@@ -352,7 +312,9 @@ export default function DashboardPlombier({ onLogout }) {
               <div style={styles.tableWrapper}>
                 <table style={styles.table}>
                   <thead>
-                    <tr><th style={styles.th}>Article</th><th style={styles.th}>Qté</th><th style={styles.th}>Chantier</th><th style={styles.th}>Date</th><th style={styles.th}>Action</th></tr>
+                    <tr>
+                      <th style={styles.th}>Article</th><th style={styles.th}>Qté</th><th style={styles.th}>Chantier</th><th style={styles.th}>Date</th><th style={styles.th}>Actions</th>
+                    </table>
                   </thead>
                   <tbody>
                     {loading ? (
@@ -362,16 +324,36 @@ export default function DashboardPlombier({ onLogout }) {
                     ) : (
                       sorties.map(s => (
                         <tr key={s.id}>
-                          <td style={styles.td}>{s.articleNom}</td>
-                          <td style={{ ...styles.td, color: DANGER, fontWeight: '700' }}>-{s.quantite}</td>
-                          <td style={styles.td}>{s.chantier}</td>
-                          <td style={styles.td}>{s.date}</td>
-                          <td style={styles.td}>
-                            <button style={styles.btnDanger} onClick={() => annulerSortie(s)}>
-                              <Undo size={14} /> Annuler
-                            </button>
-                          </td>
-                        </table>
+                          {editingSortieId === s.id ? (
+                            <>
+                              <td style={styles.td}>{s.articleNom}</td>
+                              <td style={styles.td}>
+                                <input type="number" value={editForm.quantite} onChange={e => setEditForm({ ...editForm, quantite: e.target.value })} style={{ width: '80px', padding: '4px' }} />
+                              </td>
+                              <td style={styles.td}>
+                                <input type="text" value={editForm.chantier} onChange={e => setEditForm({ ...editForm, chantier: e.target.value })} style={{ width: '120px', padding: '4px' }} />
+                              </td>
+                              <td style={styles.td}>{s.date}</td>
+                              <td style={styles.td}>
+                                <button style={styles.btnSecondary} onClick={() => saveEdit(s)}><Save size={14} /> OK</button>
+                                <button style={styles.btnDanger} onClick={cancelEdit} style={{ marginLeft: '8px' }}><X size={14} /> Annuler</button>
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td style={styles.td}>{s.articleNom}</td>
+                              <td style={{ ...styles.td, color: DANGER, fontWeight: '700' }}>-{s.quantite}</td>
+                              <td style={styles.td}>{s.chantier}</td>
+                              <td style={styles.td}>{s.date}</td>
+                              <td style={styles.td}>
+                                <div style={styles.flexRow}>
+                                  <button style={styles.btnSecondary} onClick={() => startEdit(s)}><Edit size={14} /> Modifier</button>
+                                  <button style={styles.btnDanger} onClick={() => supprimerSortie(s)}><Trash2 size={14} /> Supprimer</button>
+                                </div>
+                              </td>
+                            </>
+                          )}
+                        </tr>
                       ))
                     )}
                   </tbody>
