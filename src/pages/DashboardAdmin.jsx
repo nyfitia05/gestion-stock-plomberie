@@ -353,10 +353,9 @@ const renderCommandes = () => (
           <input style={baseStyles.input} placeholder="Nom *" value={newArt.nom} onChange={e => setNewArt({ ...newArt, nom: e.target.value })} />
           <input style={baseStyles.input} placeholder="Référence" value={newArt.reference} onChange={e => setNewArt({ ...newArt, reference: e.target.value })} />
           <input style={baseStyles.input} placeholder="Fournisseur" value={newArt.fournisseur} onChange={e => setNewArt({ ...newArt, fournisseur: e.target.value })} />
-          <input style={baseStyles.input} placeholder="Unité (m, u, kg…)" value={newArt.unite} onChange={e => setNewArt({ ...newArt, unite: e.target.value })} />
-          <input style={baseStyles.input} type="number" placeholder="Seuil alerte" value={newArt.seuil_alerte} onChange={e => setNewArt({ ...newArt, seuil_alerte: e.target.value })} />
-          <input style={baseStyles.input} type="number" placeholder="Quantité initiale" value={newArt.quantite_stock} onChange={e => setNewArt({ ...newArt, quantite_stock: e.target.value })} />
-          <button style={{ ...baseStyles.btnNavy, opacity: saving ? 0.6 : 1 }} onClick={ajouterArticle} disabled={saving}>
+          <input style={baseStyles.input} placeholder="Unité (m, u, kg…)" value={newArt.unite === 'Unité' ? '' : newArt.unite} onChange={e => setNewArt({ ...newArt, unite: e.target.value })} />
+          <input style={baseStyles.input} type="number" placeholder="Seuil alerte (ex: 5)" value={newArt.seuil_alerte === 5 ? '' : newArt.seuil_alerte} onChange={e => setNewArt({ ...newArt, seuil_alerte: e.target.value })} />
+          <input style={baseStyles.input} type="number" placeholder="Quantité initiale" value={newArt.quantite_stock === 0 ? '' : newArt.quantite_stock} onChange={e => setNewArt({ ...newArt, quantite_stock: e.target.value })} />          <button style={{ ...baseStyles.btnNavy, opacity: saving ? 0.6 : 1 }} onClick={ajouterArticle} disabled={saving}>
             <PlusCircle size={14} /> {saving ? 'Enregistrement…' : 'Ajouter l\'article'}
           </button>
         </div>
