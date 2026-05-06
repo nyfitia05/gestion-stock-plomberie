@@ -78,7 +78,7 @@ export default function DashboardAdmin({ onLogout }) {
   const [plombiers, setPlombiers] = useState([]);
   const [bons, setBons] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newArt, setNewArt] = useState({ nom: '', reference: '', fournisseur: '', unite: 'Unité', seuil_alerte: 5 });
+  const [newArt, setNewArt] = useState({ nom: '', reference: '', fournisseur: '', unite: 'Unité', seuil_alerte: 5, quantite_stock: 0 });  
   const [bon, setBon] = useState({ fournisseur: '', reference_bon: '', lignes: [] });
   const [newPlombier, setNewPlombier] = useState({ nom: '', email: '', role: 'plombier' });
   const [saving, setSaving] = useState(false);
@@ -112,14 +112,25 @@ export default function DashboardAdmin({ onLogout }) {
     setLoading(false);
   }
 
-  async function ajouterArticle() {
-    if (!newArt.nom) return alert('Nom requis');
-    setSaving(true);
-    await addDoc(collection(db, 'articles'), { ...newArt, quantite_stock: 0, seuil_alerte: Number(newArt.seuil_alerte) });
-    setNewArt({ nom: '', reference: '', fournisseur: '', unite: 'Unité', seuil_alerte: 5 });
-    await loadAll();
-    setSaving(false);
-  }
+async function ajouterArticle() {
+  if (!newArt.nom) return alert('Nom requis');
+  setSaving(true);
+  await addDoc(collection(db, 'articles'), {
+    ...newArt,
+    quantite_stock: Number(newArt.quantite_stock) || 0,
+    seuil_alerte: Number(newArt.seuil_alerte),
+  });
+  setNewArt({ nom: '', reference: '', fournisseur: '', unite: 'Unité', seuil_alerte: 5, quantite_stock: 0 });
+  await loadAll();
+  setSaving(false);
+}
+
+async function updateArticleQuantite(articleId, newQty) {
+  if (isNaN(newQty) || newQty < 0) return;
+  await updateDoc(doc(db, 'articles', articleId), { quantite_stock: Number(newQty) });
+  await loadAll();
+  setEditingArticleId(null);
+}
 
   // MODIFIÉ : enregistre aussi la date de commande sur chaque article
   async function validerBon() {
@@ -325,57 +336,103 @@ export default function DashboardAdmin({ onLogout }) {
   );
 
   // MODIFIÉ : Commandes = ajout article + réception livraison
-  const renderCommandes = () => (
-    <>
-      <div style={baseStyles.card}>
-        <div style={baseStyles.cardHead}>
-          <div style={baseStyles.cardTitle}><div style={baseStyles.cardIcon}><Package size={14} color={NAVY} /></div>Ajouter un article au catalogue</div>
-        </div>
-        <div style={baseStyles.cardBody}>
-          <div style={baseStyles.formGrid}>
-            <input style={baseStyles.input} placeholder="Nom *" value={newArt.nom} onChange={e => setNewArt({ ...newArt, nom: e.target.value })} />
-            <input style={baseStyles.input} placeholder="Référence" value={newArt.reference} onChange={e => setNewArt({ ...newArt, reference: e.target.value })} />
-            <input style={baseStyles.input} placeholder="Fournisseur" value={newArt.fournisseur} onChange={e => setNewArt({ ...newArt, fournisseur: e.target.value })} />
-            <input style={baseStyles.input} placeholder="Unité (m, u, kg…)" value={newArt.unite} onChange={e => setNewArt({ ...newArt, unite: e.target.value })} />
-            <input style={baseStyles.input} type="number" placeholder="Seuil alerte" value={newArt.seuil_alerte} onChange={e => setNewArt({ ...newArt, seuil_alerte: e.target.value })} />
-            <button style={{ ...baseStyles.btnNavy, opacity: saving ? 0.6 : 1 }} onClick={ajouterArticle} disabled={saving}>
-              <PlusCircle size={14} /> {saving ? 'Enregistrement…' : 'Ajouter'}
-            </button>
-          </div>
+const renderCommandes = () => (
+  <>
+    <div style={baseStyles.card}>
+      <div style={baseStyles.cardHead}>
+        <div style={baseStyles.cardTitle}>
+          <div style={baseStyles.cardIcon}><Package size={14} color={NAVY} /></div>
+          Ajouter un article
         </div>
       </div>
+      <div style={baseStyles.cardBody}>
+        <p style={{ fontSize: '11px', fontWeight: '600', color: MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>
+          Informations article + quantité initiale
+        </p>
+        <div style={baseStyles.formGrid}>
+          <input style={baseStyles.input} placeholder="Nom *" value={newArt.nom} onChange={e => setNewArt({ ...newArt, nom: e.target.value })} />
+          <input style={baseStyles.input} placeholder="Référence" value={newArt.reference} onChange={e => setNewArt({ ...newArt, reference: e.target.value })} />
+          <input style={baseStyles.input} placeholder="Fournisseur" value={newArt.fournisseur} onChange={e => setNewArt({ ...newArt, fournisseur: e.target.value })} />
+          <input style={baseStyles.input} placeholder="Unité (m, u, kg…)" value={newArt.unite} onChange={e => setNewArt({ ...newArt, unite: e.target.value })} />
+          <input style={baseStyles.input} type="number" placeholder="Seuil alerte" value={newArt.seuil_alerte} onChange={e => setNewArt({ ...newArt, seuil_alerte: e.target.value })} />
+          <input style={baseStyles.input} type="number" placeholder="Quantité initiale" value={newArt.quantite_stock} onChange={e => setNewArt({ ...newArt, quantite_stock: e.target.value })} />
+          <button style={{ ...baseStyles.btnNavy, opacity: saving ? 0.6 : 1 }} onClick={ajouterArticle} disabled={saving}>
+            <PlusCircle size={14} /> {saving ? 'Enregistrement…' : 'Ajouter l\'article'}
+          </button>
+        </div>
+      </div>
+    </div>
 
-      <div style={baseStyles.card}>
-        <div style={baseStyles.cardHead}>
-          <div style={baseStyles.cardTitle}><div style={baseStyles.cardIcon}><Truck size={14} color={NAVY} /></div>Réceptionner une livraison</div>
+    <div style={baseStyles.card}>
+      <div style={baseStyles.cardHead}>
+        <div style={baseStyles.cardTitle}>
+          <div style={baseStyles.cardIcon}><Package size={14} color={NAVY} /></div>
+          Catalogue &amp; stocks
         </div>
-        <div style={baseStyles.cardBody}>
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
-            <input style={{ ...baseStyles.input, flex: 1, minWidth: '160px' }} placeholder="Fournisseur *" value={bon.fournisseur} onChange={e => setBon({ ...bon, fournisseur: e.target.value })} />
-            <input style={{ ...baseStyles.input, flex: 1, minWidth: '160px' }} placeholder="Référence bon" value={bon.reference_bon} onChange={e => setBon({ ...bon, reference_bon: e.target.value })} />
-          </div>
-          {bon.lignes.map((ligne, idx) => (
-            <div key={idx} style={baseStyles.bonRow}>
-              <select style={{ ...baseStyles.select, flex: 1 }} value={ligne.articleId} onChange={e => { const l = [...bon.lignes]; l[idx].articleId = e.target.value; setBon({ ...bon, lignes: l }); }}>
-                <option value="">Choisir un article…</option>
-                {articles.map(a => <option key={a.id} value={a.id}>{a.nom}</option>)}
-              </select>
-              <input style={{ ...baseStyles.input, width: '90px', flexShrink: 0 }} type="number" placeholder="Qté" value={ligne.quantite} onChange={e => { const l = [...bon.lignes]; l[idx].quantite = e.target.value; setBon({ ...bon, lignes: l }); }} />
-              <button style={{ ...baseStyles.btnDanger, flexShrink: 0 }} onClick={() => setBon({ ...bon, lignes: bon.lignes.filter((_, i) => i !== idx) })}>✕</button>
-            </div>
-          ))}
-          <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
-            <button style={{ ...baseStyles.btnNavy, background: '#f0f4f9', color: NAVY }} onClick={() => setBon(b => ({ ...b, lignes: [...b.lignes, { articleId: '', quantite: '' }] }))}>
-              <PlusCircle size={14} /> Ajouter ligne
-            </button>
-            <button style={{ ...baseStyles.btnOrange, opacity: saving ? 0.6 : 1 }} onClick={validerBon} disabled={saving}>
-              <Truck size={14} /> {saving ? 'Enregistrement…' : 'Valider le bon'}
-            </button>
-          </div>
-        </div>
+        <span style={{ fontSize: '12px', color: MUTED }}>{articles.length} articles</span>
       </div>
-    </>
-  );
+      <div style={baseStyles.tableWrapper}>
+        <table style={baseStyles.table}>
+          <thead>
+            <tr>
+              <th style={baseStyles.th}>Nom</th>
+              <th style={baseStyles.th}>Réf</th>
+              <th style={baseStyles.th}>Fournisseur</th>
+              <th style={baseStyles.th}>Quantité</th>
+              <th style={baseStyles.th}>Unité</th>
+              <th style={baseStyles.th}>Seuil</th>
+              <th style={baseStyles.th}>Statut</th>
+              <th style={baseStyles.th}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {articles.length === 0
+              ? <tr><td colSpan={8} style={{ ...baseStyles.td, textAlign: 'center', color: MUTED }}>Aucun article</td></tr>
+              : articles.map(a => {
+                const [type, label] = getBadge(a);
+                return (
+                  <tr key={a.id}>
+                    <td style={{ ...baseStyles.td, fontWeight: '500' }}>{a.nom}</td>
+                    <td style={{ ...baseStyles.td, color: MUTED, fontFamily: 'monospace' }}>{a.reference || '—'}</td>
+                    <td style={baseStyles.td}>{a.fournisseur || '—'}</td>
+                    <td style={baseStyles.td}>
+                      {editingArticleId === a.id ? (
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                          <input
+                            type="number" value={editSeuil}
+                            onChange={e => setEditSeuil(e.target.value)}
+                            style={{ width: '70px', padding: '4px', borderRadius: '4px', border: `1px solid ${BORDER}` }}
+                            autoFocus
+                          />
+                          <button onClick={() => updateArticleQuantite(a.id, editSeuil)} style={baseStyles.btnIcon}><Save size={14} color={SUCCESS} /></button>
+                          <button onClick={() => setEditingArticleId(null)} style={baseStyles.btnIcon}><X size={14} color={DANGER} /></button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <span style={{ fontWeight: '700', color: type === 'low' ? DANGER : '#1a2332' }}>{a.quantite_stock}</span>
+                          <button onClick={() => { setEditingArticleId(a.id); setEditSeuil(a.quantite_stock.toString()); }} style={baseStyles.btnIcon}>
+                            <Edit size={14} color={NAVY} />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                    <td style={baseStyles.td}>{a.unite}</td>
+                    <td style={baseStyles.td}>{a.seuil_alerte}</td>
+                    <td style={baseStyles.td}><span style={baseStyles.badge(type)}>{label}</span></td>
+                    <td style={baseStyles.td}>
+                      <button onClick={() => deleteArticle(a.id, a.nom)} style={{ ...baseStyles.btnIcon, color: DANGER }}>
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </>
+);
 
   const renderSorties = () => (
     <div style={baseStyles.card}>
