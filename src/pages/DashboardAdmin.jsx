@@ -79,7 +79,7 @@ export default function DashboardAdmin({ onLogout }) {
   const [bons, setBons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newArt, setNewArt] = useState({ nom: '', reference: '', fournisseur: '', unite: 'Unité', seuil_alerte: 5, quantite_stock: 0 });  
-  const [newPlombier, setNewPlombier] = useState({ nom: '', email: '', role: 'plombier' });
+  const [newPlombier, setNewPlombier] = useState({ nom: '', role: 'plombier' });
   const [saving, setSaving] = useState(false);
   const [editingArticleId, setEditingArticleId] = useState(null);
   const [editSeuil, setEditSeuil] = useState('');
@@ -93,6 +93,10 @@ export default function DashboardAdmin({ onLogout }) {
 
   useEffect(() => { if (isMobile) setDrawerOpen(false); }, [tab, isMobile]);
   useEffect(() => { loadAll(); }, []);
+    useEffect(() => {
+    setEditingArticleId(null);
+    setEditSeuil('');
+  }, [tab]);
 
   async function loadAll() {
     setLoading(true);
@@ -164,10 +168,10 @@ async function updateArticleQuantite(articleId, newQty) {
 
 
   async function ajouterPlombier() {
-    if (!newPlombier.nom || !newPlombier.email) return alert('Nom et email requis');
+    if (!newPlombier.nom) return alert('Nom requis');
     setSaving(true);
     await addDoc(collection(db, 'plombiers'), { ...newPlombier });
-    setNewPlombier({ nom: '', email: '', role: 'plombier' });
+    setNewPlombier({ nom: '', role: 'plombier' });
     await loadAll();
     setSaving(false);
   }
@@ -464,51 +468,63 @@ const renderCommandes = () => (
     </div>
   );
 
-  const renderPlombiers = () => (
-    <div style={baseStyles.card}>
-      <div style={baseStyles.cardHead}>
-        <div style={baseStyles.cardTitle}><div style={baseStyles.cardIcon}><Users size={14} color={NAVY} /></div>Équipe</div>
-        <span style={{ fontSize: '12px', color: MUTED }}>{plombiers.length} membres</span>
+const renderPlombiers = () => (
+  <div style={baseStyles.card}>
+    <div style={baseStyles.cardHead}>
+      <div style={baseStyles.cardTitle}>
+        <div style={baseStyles.cardIcon}><Users size={14} color={NAVY} /></div>
+        Équipe
       </div>
-      <div style={baseStyles.cardBody}>
-        <p style={{ fontSize: '11px', fontWeight: '600', color: MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Ajouter un membre</p>
-        <div style={baseStyles.formGrid}>
-          <input style={baseStyles.input} placeholder="Nom complet *" value={newPlombier.nom} onChange={e => setNewPlombier({ ...newPlombier, nom: e.target.value })} />
-          <input style={baseStyles.input} placeholder="Email *" value={newPlombier.email} onChange={e => setNewPlombier({ ...newPlombier, email: e.target.value })} />
-          <select style={baseStyles.select} value={newPlombier.role} onChange={e => setNewPlombier({ ...newPlombier, role: e.target.value })}>
-            <option value="plombier">Plombier</option>
-            <option value="admin">Admin</option>
-          </select>
-          <button style={{ ...baseStyles.btnNavy, opacity: saving ? 0.6 : 1 }} onClick={ajouterPlombier} disabled={saving}>
-            <PlusCircle size={14} /> Ajouter
-          </button>
-        </div>
-      </div>
-      <div style={baseStyles.tableWrapper}>
-        <table style={baseStyles.table}>
-          <thead><tr><th style={baseStyles.th}>Nom</th><th style={baseStyles.th}>Email</th><th style={baseStyles.th}>Rôle</th><th style={baseStyles.th}>Action</th></tr></thead>
-          <tbody>
-            {plombiers.length === 0 ? <tr><td colSpan={4} style={{ ...baseStyles.td, textAlign: 'center', color: MUTED }}>Aucun membre</td></tr>
-              : plombiers.map(p => (
-                <tr key={p.id}>
-                  <td style={{ ...baseStyles.td, fontWeight: '500' }}>{p.nom}</td>
-                  <td style={{ ...baseStyles.td, color: MUTED }}>{p.email}</td>
-                  <td style={baseStyles.td}>
-                    <select value={p.role} onChange={e => changerRolePlombier(p.id, e.target.value)} style={{ ...baseStyles.select, width: 'auto', padding: '4px 8px', fontSize: '12px' }}>
-                      <option value="plombier">Plombier</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </td>
-                  <td style={baseStyles.td}>
-                    <button style={baseStyles.btnDanger} onClick={() => supprimerPlombier(p.id, p.nom)}>Supprimer</button>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
+      <span style={{ fontSize: '12px', color: MUTED }}>{plombiers.length} membres</span>
+    </div>
+    <div style={baseStyles.cardBody}>
+      <p style={{ fontSize: '11px', fontWeight: '600', color: MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>Ajouter un membre</p>
+      <div style={baseStyles.formGrid}>
+        <input style={baseStyles.input} placeholder="Nom complet *" value={newPlombier.nom} onChange={e => setNewPlombier({ ...newPlombier, nom: e.target.value })} />
+        <select style={baseStyles.select} value={newPlombier.role} onChange={e => setNewPlombier({ ...newPlombier, role: e.target.value })}>
+          <option value="plombier">Plombier</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button style={{ ...baseStyles.btnNavy, opacity: saving ? 0.6 : 1 }} onClick={ajouterPlombier} disabled={saving}>
+          <PlusCircle size={14} /> Ajouter
+        </button>
       </div>
     </div>
-  );
+    <div style={baseStyles.tableWrapper}>
+      <table style={baseStyles.table}>
+        <thead>
+          <tr>
+            <th style={baseStyles.th}>Nom</th>
+            <th style={baseStyles.th}>Rôle</th>
+            <th style={baseStyles.th}>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {plombiers.length === 0 ? (
+            <tr>
+              <td colSpan={3} style={{ ...baseStyles.td, textAlign: 'center', color: MUTED }}>Aucun membre</td>
+            </tr>
+          ) : (
+            plombiers.map(p => (
+              <tr key={p.id}>
+                <td style={{ ...baseStyles.td, fontWeight: '500' }}>{p.nom}</td>
+                <td style={baseStyles.td}>
+                  <select value={p.role} onChange={e => changerRolePlombier(p.id, e.target.value)} style={{ ...baseStyles.select, width: 'auto', padding: '4px 8px', fontSize: '12px' }}>
+                    <option value="plombier">Plombier</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </td>
+                <td style={baseStyles.td}>
+                  <button style={baseStyles.btnDanger} onClick={() => supprimerPlombier(p.id, p.nom)}>Supprimer</button>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
 
 const renderHistorique = () => {
   const mouvements = [
