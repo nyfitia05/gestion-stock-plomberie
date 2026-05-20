@@ -78,8 +78,7 @@ export default function DashboardAdmin({ onLogout }) {
   const [plombiers, setPlombiers] = useState([]);
   const [bons, setBons] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newArt, setNewArt] = useState({ nom: '', reference: '', fournisseur: '', unite: 'Unité', seuil_alerte: 5, quantite_stock: 0 });  
-  const [newPlombier, setNewPlombier] = useState({ nom: '', role: 'plombier' });
+const [newArt, setNewArt] = useState({ nom: '', reference: '', fournisseur: '', unite: 'Unité', seuil_alerte: 5, quantite_stock: 0, date_achat: '' });  const [newPlombier, setNewPlombier] = useState({ nom: '', role: 'plombier' });
   const [saving, setSaving] = useState(false);
   const [editingArticleId, setEditingArticleId] = useState(null);
   const [editSeuil, setEditSeuil] = useState('');
@@ -118,7 +117,7 @@ export default function DashboardAdmin({ onLogout }) {
 async function ajouterArticle() {
   if (!newArt.nom) return alert('Nom requis');
   setSaving(true);
-  const dateAjout = new Date().toLocaleDateString('fr-FR');
+const dateAjout = newArt.date_achat || new Date().toLocaleDateString('fr-FR');
 
   const docRef = await addDoc(collection(db, 'articles'), {
     ...newArt,
@@ -137,7 +136,7 @@ async function ajouterArticle() {
     });
   }
 
-  setNewArt({ nom: '', reference: '', fournisseur: '', unite: 'Unité', seuil_alerte: 5, quantite_stock: 0 });
+setNewArt({ nom: '', reference: '', fournisseur: '', unite: 'Unité', seuil_alerte: 5, quantite_stock: 0, date_achat: '' });
   await loadAll();
   setSaving(false);
 }
@@ -364,7 +363,19 @@ const renderCommandes = () => (
           <input style={baseStyles.input} placeholder="Fournisseur" value={newArt.fournisseur} onChange={e => setNewArt({ ...newArt, fournisseur: e.target.value })} />
           <input style={baseStyles.input} placeholder="Unité (m, u, kg…)" value={newArt.unite === 'Unité' ? '' : newArt.unite} onChange={e => setNewArt({ ...newArt, unite: e.target.value })} />
           <input style={baseStyles.input} type="number" placeholder="Seuil alerte (ex: 5)" value={newArt.seuil_alerte === 5 ? '' : newArt.seuil_alerte} onChange={e => setNewArt({ ...newArt, seuil_alerte: e.target.value })} />
-          <input style={baseStyles.input} type="number" placeholder="Quantité initiale" value={newArt.quantite_stock === 0 ? '' : newArt.quantite_stock} onChange={e => setNewArt({ ...newArt, quantite_stock: e.target.value })} />          <button style={{ ...baseStyles.btnNavy, opacity: saving ? 0.6 : 1 }} onClick={ajouterArticle} disabled={saving}>
+          <input style={baseStyles.input} type="number" placeholder="Quantité initiale" value={newArt.quantite_stock === 0 ? '' : newArt.quantite_stock} onChange={e => setNewArt({ ...newArt, quantite_stock: e.target.value })} />
+          <input
+            style={baseStyles.input}
+            type="date"
+            value={newArt.date_achat
+              ? newArt.date_achat.split('/').reverse().join('-')
+              : ''}
+            onChange={e => {
+              const [y, m, d] = e.target.value.split('-');
+              setNewArt({ ...newArt, date_achat: e.target.value ? `${d}/${m}/${y}` : '' });
+            }}
+          />         
+          <button style={{ ...baseStyles.btnNavy, opacity: saving ? 0.6 : 1 }} onClick={ajouterArticle} disabled={saving}>
             <PlusCircle size={14} /> {saving ? 'Enregistrement…' : 'Ajouter l\'article'}
           </button>
         </div>
