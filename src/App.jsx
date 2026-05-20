@@ -13,6 +13,9 @@ export default function App() {
   const [etape, setEtape] = useState('role');
   const [plombiers, setPlombiers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+const [loginError, setLoginError] = useState('');
+const ADMIN_PASSWORD = 'Lucioles535*';
 
   async function chargerPlombiers() {
     setLoading(true);
@@ -58,17 +61,17 @@ export default function App() {
             <h1 style={{ fontSize: '20px', fontWeight: '700', color: NAVY, margin: '0 0 6px' }}>Gestion de Stock</h1>
             <p style={{ fontSize: '13px', color: '#7a8a9a', margin: '0 0 32px' }}>Choisissez votre profil pour continuer</p>
 
-            <button onClick={() => setRole('admin')} style={{
-              width: '100%', padding: '16px', marginBottom: '12px',
-              background: NAVY, color: '#fff', border: 'none', borderRadius: '14px',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px',
-            }}>
-              <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>🛠️</div>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontWeight: '700', fontSize: '15px' }}>Administrateur</div>
-                <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '2px' }}>Gérer stock, commandes, équipe</div>
-              </div>
-            </button>
+          <button onClick={() => setEtape('login-admin')} style={{
+            width: '100%', padding: '16px', marginBottom: '12px',
+            background: NAVY, color: '#fff', border: 'none', borderRadius: '14px',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px',
+          }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>🛠️</div>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontWeight: '700', fontSize: '15px' }}>Administrateur</div>
+              <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '2px' }}>Gérer stock, commandes, équipe</div>
+            </div>
+          </button>
 
             <button onClick={() => { setEtape('choix-plombier'); chargerPlombiers(); }} style={{
               width: '100%', padding: '16px',
@@ -115,6 +118,55 @@ export default function App() {
             </button>
           </>
         )}
+
+        {etape === 'login-admin' && (
+  <>
+    <h1 style={{ fontSize: '18px', fontWeight: '700', color: NAVY, margin: '0 0 6px' }}>Accès Administrateur</h1>
+    <p style={{ fontSize: '13px', color: '#7a8a9a', margin: '0 0 24px' }}>Entrez le mot de passe</p>
+
+    <input
+      type="password"
+      placeholder="Mot de passe"
+      value={passwordInput}
+      onChange={e => { setPasswordInput(e.target.value); setLoginError(''); }}
+      onKeyDown={e => {
+        if (e.key === 'Enter') {
+          if (passwordInput === ADMIN_PASSWORD) { setRole('admin'); }
+          else { setLoginError('Mot de passe incorrect.'); }
+        }
+      }}
+      style={{
+        width: '100%', padding: '12px 14px', borderRadius: '12px',
+        border: `1.5px solid ${loginError ? '#dc2626' : '#e2e8f0'}`,
+        fontSize: '14px', marginBottom: '8px', boxSizing: 'border-box', outline: 'none',
+      }}
+      autoFocus
+    />
+
+    {loginError && (
+      <p style={{ color: '#dc2626', fontSize: '12px', margin: '0 0 12px' }}>{loginError}</p>
+    )}
+
+    <button
+      onClick={() => {
+        if (passwordInput === ADMIN_PASSWORD) { setRole('admin'); }
+        else { setLoginError('Mot de passe incorrect.'); }
+      }}
+      style={{
+        width: '100%', padding: '12px', background: NAVY, color: '#fff',
+        border: 'none', borderRadius: '12px', fontSize: '14px',
+        fontWeight: '600', cursor: 'pointer', marginBottom: '10px',
+      }}
+    >
+      Connexion
+    </button>
+
+    <button onClick={() => { setEtape('role'); setPasswordInput(''); setLoginError(''); }}
+      style={{ background: 'none', border: 'none', color: '#7a8a9a', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}>
+      ← Retour
+    </button>
+  </>
+)}
       </div>
     </div>
   );
