@@ -370,7 +370,7 @@ export default function DashboardAdmin({ onLogout }) {
             <tr>
               <th style={baseStyles.th}>Photo</th>
               <th style={baseStyles.th}>Nom</th>
-              <th style={baseStyles.th}>Réf</th>
+              <th style={baseStyles.th}>R éf</th>
               <th style={baseStyles.th}>Fournisseur</th>
               <th style={baseStyles.th}>Qté</th>
               <th style={baseStyles.th}>Seuil</th>
