@@ -5,7 +5,7 @@ import { db, storage } from '../lib/firebase';
 import { Package, AlertTriangle, TrendingDown, Truck, PlusCircle, History, Users, LogOut, LayoutDashboard, Edit, Trash2, Save, X, Menu, ShoppingCart, FileDown } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
- 
+
 const NAVY = '#1a3a5c';
 const ORANGE = '#e85d24';
 const BG = '#f0f4f9';
@@ -16,7 +16,7 @@ const DANGER_BG = '#fee2e2';
 const SUCCESS = '#16a34a';
 const SUCCESS_BG = '#dcfce7';
 const WARNING = '#d97706';
- 
+
 const baseStyles = {
   shell: { display: 'flex', minHeight: '100vh', background: BG, fontFamily: "'DM Sans','Segoe UI',sans-serif", position: 'relative' },
   sidebar: { width: '230px', flexShrink: 0, background: NAVY, borderRadius: '0 24px 24px 0', display: 'flex', flexDirection: 'column', padding: '24px 14px', position: 'sticky', top: 0, height: '100vh', boxShadow: '4px 0 20px rgba(26,58,92,0.12)' },
@@ -64,7 +64,7 @@ const baseStyles = {
   photoThumb: { width: '40px', height: '40px', objectFit: 'cover', borderRadius: '8px', border: `1px solid ${BORDER}` },
   photoPlaceholder: { width: '40px', height: '40px', borderRadius: '8px', background: '#f0f4f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: '10px' },
 };
- 
+
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'stock', label: 'Stock', icon: Package },
@@ -73,7 +73,7 @@ const NAV = [
   { id: 'plombiers', label: 'Plombiers', icon: Users },
   { id: 'historique', label: 'Historique', icon: History },
 ];
- 
+
 export default function DashboardAdmin({ onLogout }) {
   const [tab, setTab] = useState('dashboard');
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -91,21 +91,21 @@ export default function DashboardAdmin({ onLogout }) {
   const [editSeuil, setEditSeuil] = useState('');
   const [editingPlombierId, setEditingPlombierId] = useState(null);
   const [editMotDePasse, setEditMotDePasse] = useState('');
- 
+
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
- 
+
   useEffect(() => { if (isMobile) setDrawerOpen(false); }, [tab, isMobile]);
   useEffect(() => { loadAll(); }, []);
   useEffect(() => {
     setEditingArticleId(null);
     setEditSeuil('');
   }, [tab]);
- 
+
   async function loadAll() {
     setLoading(true);
     try {
@@ -122,7 +122,7 @@ export default function DashboardAdmin({ onLogout }) {
     } catch (e) { alert('Erreur chargement : ' + e.message); }
     setLoading(false);
   }
- 
+
   // Upload d'une photo vers Firebase Storage — retourne l'URL publique ou '' si pas de fichier
   async function uploadPhoto(file, folder) {
     if (!file) return '';
@@ -130,12 +130,12 @@ export default function DashboardAdmin({ onLogout }) {
     await uploadBytes(fileRef, file);
     return await getDownloadURL(fileRef);
   }
- 
+
   async function ajouterArticle() {
     if (!newArt.nom) return alert('Nom requis');
     setSaving(true);
     const dateAjout = newArt.date_achat || new Date().toLocaleDateString('fr-FR');
- 
+
     let photoUrl = '';
     if (newArt.photoFile) {
       setUploadingPhoto(true);
@@ -146,7 +146,7 @@ export default function DashboardAdmin({ onLogout }) {
       }
       setUploadingPhoto(false);
     }
- 
+
     const { photoFile, ...artData } = newArt;
     const docRef = await addDoc(collection(db, 'articles'), {
       ...artData,
@@ -155,7 +155,7 @@ export default function DashboardAdmin({ onLogout }) {
       derniere_commande: dateAjout,
       photoUrl,
     });
- 
+
     // ← Trace dans l'historique si quantité initiale > 0
     if (Number(newArt.quantite_stock) > 0) {
       await addDoc(collection(db, 'bons_commande'), {
@@ -165,34 +165,39 @@ export default function DashboardAdmin({ onLogout }) {
         lignes: [{ articleId: docRef.id, articleNom: newArt.nom, quantite: Number(newArt.quantite_stock) }],
       });
     }
- 
+
     setNewArt({ nom: '', reference: '', fournisseur: '', unite: 'Unité', seuil_alerte: 5, quantite_stock: 0, date_achat: '', photoFile: null });
     await loadAll();
     setSaving(false);
   }
- 
+
   async function updateArticleQuantite(articleId, newQty) {
     if (isNaN(newQty) || newQty < 0) return;
     const article = articles.find(a => a.id === articleId);
     const dateUpdate = new Date().toLocaleDateString('fr-FR');
- 
+    const ancienneQuantite = Number(article?.quantite_stock || 0);
+    const difference = Number(newQty) - ancienneQuantite;
+
     await updateDoc(doc(db, 'articles', articleId), {
       quantite_stock: Number(newQty),
       derniere_commande: dateUpdate,
     });
- 
-    // ← On enregistre le mouvement dans bons_commande pour l'historique
-    await addDoc(collection(db, 'bons_commande'), {
-      fournisseur: article?.fournisseur || '—',
-      reference_bon: 'Mise à jour manuelle',
-      date: dateUpdate,
-      lignes: [{ articleId, articleNom: article?.nom || '—', quantite: Number(newQty) }],
-    });
- 
+
+    // ← On n'enregistre un mouvement QUE si la quantité a réellement changé,
+    // et on enregistre la DIFFÉRENCE (pas le nouveau total) pour ne pas fausser "Total acheté"
+    if (difference !== 0) {
+      await addDoc(collection(db, 'bons_commande'), {
+        fournisseur: article?.fournisseur || '—',
+        reference_bon: 'Mise à jour manuelle',
+        date: dateUpdate,
+        lignes: [{ articleId, articleNom: article?.nom || '—', quantite: difference }],
+      });
+    }
+
     await loadAll();
     setEditingArticleId(null);
   }
- 
+
   async function ajouterPlombier() {
     if (!newPlombier.nom) return alert('Nom requis');
     if (!newPlombier.motDePasse) return alert('Mot de passe requis — c\'est ce qui protège son profil.');
@@ -202,19 +207,19 @@ export default function DashboardAdmin({ onLogout }) {
     await loadAll();
     setSaving(false);
   }
- 
+
   async function supprimerPlombier(id, nom) {
     if (!confirm(`Supprimer ${nom} ?`)) return;
     await deleteDoc(doc(db, 'plombiers', id));
     await loadAll();
   }
- 
+
   async function changerRolePlombier(id, role, nom) {
     if (!confirm(`Changer le rôle de ${nom} en "${role}" ?`)) return;
     await updateDoc(doc(db, 'plombiers', id), { role });
     await loadAll();
   }
- 
+
   async function updateMotDePasse(id, nouveauMdp) {
     if (!nouveauMdp) return alert('Le mot de passe ne peut pas être vide.');
     await updateDoc(doc(db, 'plombiers', id), { motDePasse: nouveauMdp });
@@ -222,19 +227,19 @@ export default function DashboardAdmin({ onLogout }) {
     setEditingPlombierId(null);
     setEditMotDePasse('');
   }
- 
+
   async function updateArticleSeuil(articleId, newSeuil) {
     if (isNaN(newSeuil) || newSeuil < 0) return;
     await updateDoc(doc(db, 'articles', articleId), { seuil_alerte: Number(newSeuil) });
     await loadAll();
     setEditingArticleId(null);
   }
- 
+
   // Génère un PDF pour un bon de commande/réception — n'affiche que ce qui est réellement rempli
   function genererBonPDF(bon) {
     const pdf = new jsPDF();
     const NAVY_RGB = [26, 58, 92];
- 
+
     pdf.setFillColor(...NAVY_RGB);
     pdf.rect(0, 0, 210, 30, 'F');
     pdf.setTextColor(255, 255, 255);
@@ -242,7 +247,7 @@ export default function DashboardAdmin({ onLogout }) {
     pdf.text("SOS Fuite d'Eau", 14, 15);
     pdf.setFontSize(11);
     pdf.text('Bon de commande / réception', 14, 23);
- 
+
     pdf.setTextColor(0, 0, 0);
     pdf.setFontSize(10);
     let y = 40;
@@ -250,11 +255,11 @@ export default function DashboardAdmin({ onLogout }) {
     if (bon.date) { pdf.text(`Date : ${bon.date}`, 14, y); y += 6; }
     if (bon.fournisseur && bon.fournisseur !== '—') { pdf.text(`Fournisseur : ${bon.fournisseur}`, 14, y); y += 6; }
     y += 6;
- 
+
     const rows = (bon.lignes || [])
       .filter(l => l.articleNom)
       .map(l => [l.articleNom, l.quantite != null ? String(l.quantite) : '—']);
- 
+
     autoTable(pdf, {
       startY: y,
       head: [['Article', 'Quantité']],
@@ -262,29 +267,29 @@ export default function DashboardAdmin({ onLogout }) {
       headStyles: { fillColor: NAVY_RGB },
       styles: { fontSize: 10 },
     });
- 
+
     const nomFichier = (bon.reference_bon || bon.id || 'bon').toString().replace(/[^a-zA-Z0-9_-]+/g, '_');
     pdf.save(`bon_${nomFichier}.pdf`);
   }
- 
+
   async function deleteArticle(articleId, articleName) {
     if (!confirm(`Supprimer définitivement l'article "${articleName}" ?`)) return;
     await deleteDoc(doc(db, 'articles', articleId));
     await loadAll();
   }
- 
+
   const alertArts = articles.filter(a => a.quantite_stock <= a.seuil_alerte);
   const getBadge = (a) => {
     if (a.quantite_stock <= a.seuil_alerte) return ['low', 'Stock bas'];
     if (a.quantite_stock <= a.seuil_alerte * 2) return ['mid', 'Moyen'];
     return ['ok', 'OK'];
   };
- 
+
   // ── Stats claires : acheté / sorti / restant ──
   const totalStockRestant = articles.reduce((sum, a) => sum + Number(a.quantite_stock || 0), 0);
   const totalSorti = sorties.reduce((sum, s) => sum + Number(s.quantite || 0), 0);
   const totalAchete = bons.reduce((sum, b) => sum + (b.lignes || []).reduce((s2, l) => s2 + Number(l.quantite || 0), 0), 0);
- 
+
   const SidebarContent = () => (
     <>
       <div style={baseStyles.logoWrap}>
@@ -305,7 +310,7 @@ export default function DashboardAdmin({ onLogout }) {
       </div>
     </>
   );
- 
+
   const renderDashboard = () => (
     <>
       <div style={{ ...baseStyles.statsGrid, ...(isMobile ? baseStyles.statsGridMobile : {}) }}>
@@ -357,7 +362,7 @@ export default function DashboardAdmin({ onLogout }) {
       </div>
     </>
   );
- 
+
   const renderStock = () => (
     <div style={baseStyles.card}>
       <div style={baseStyles.cardHead}>
@@ -370,7 +375,7 @@ export default function DashboardAdmin({ onLogout }) {
             <tr>
               <th style={baseStyles.th}>Photo</th>
               <th style={baseStyles.th}>Nom</th>
-              <th style={baseStyles.th}>R éf</th>
+              <th style={baseStyles.th}>Réf</th>
               <th style={baseStyles.th}>Fournisseur</th>
               <th style={baseStyles.th}>Qté</th>
               <th style={baseStyles.th}>Seuil</th>
@@ -426,7 +431,7 @@ export default function DashboardAdmin({ onLogout }) {
       </div>
     </div>
   );
- 
+
   const renderCommandes = () => (
     <>
       <div style={baseStyles.card}>
@@ -470,7 +475,7 @@ export default function DashboardAdmin({ onLogout }) {
           </div>
         </div>
       </div>
- 
+
       <div style={baseStyles.card}>
         <div style={baseStyles.cardHead}>
           <div style={baseStyles.cardTitle}>
@@ -547,7 +552,7 @@ export default function DashboardAdmin({ onLogout }) {
       </div>
     </>
   );
- 
+
   const renderSorties = () => (
     <div style={baseStyles.card}>
       <div style={baseStyles.cardHead}>
@@ -573,7 +578,7 @@ export default function DashboardAdmin({ onLogout }) {
       </div>
     </div>
   );
- 
+
   const renderPlombiers = () => (
     <div style={baseStyles.card}>
       <div style={baseStyles.cardHead}>
@@ -655,7 +660,7 @@ export default function DashboardAdmin({ onLogout }) {
       </div>
     </div>
   );
- 
+
   const renderHistorique = () => {
     const mouvements = [
       ...sorties.map(s => ({
@@ -685,7 +690,7 @@ export default function DashboardAdmin({ onLogout }) {
       };
       return parse(b.date) - parse(a.date);
     });
- 
+
     return (
       <div style={baseStyles.card}>
         <div style={baseStyles.cardHead}>
@@ -719,8 +724,8 @@ export default function DashboardAdmin({ onLogout }) {
                         : <span style={baseStyles.badge('ok')}>Réception</span>}
                     </td>
                     <td style={{ ...baseStyles.td, fontWeight: '500', maxWidth: '200px' }}>{m.article}</td>
-                    <td style={{ ...baseStyles.td, fontWeight: '700', color: m.type === 'sortie' ? DANGER : SUCCESS }}>
-                      {m.type === 'sortie' ? `−${m.quantite}` : `+${m.quantite}`}
+                    <td style={{ ...baseStyles.td, fontWeight: '700', color: m.type === 'sortie' ? DANGER : (m.quantite >= 0 ? SUCCESS : DANGER) }}>
+                      {m.type === 'sortie' ? `−${m.quantite}` : (m.quantite >= 0 ? `+${m.quantite}` : m.quantite)}
                     </td>
                     <td style={baseStyles.td}>{m.detail}</td>
                     <td style={baseStyles.td}>{m.acteur}</td>
@@ -740,7 +745,7 @@ export default function DashboardAdmin({ onLogout }) {
       </div>
     );
   };
- 
+
   return (
     <>
       <div style={{ ...baseStyles.overlay, ...(drawerOpen && baseStyles.overlayOpen) }} onClick={() => setDrawerOpen(false)} />
