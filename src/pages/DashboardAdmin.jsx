@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../lib/firebase';
+import { db } from '../lib/firebase';
 import { Package, AlertTriangle, TrendingDown, Truck, PlusCircle, History, Users, LogOut, LayoutDashboard, Edit, Trash2, Save, X, Menu, ShoppingCart, FileDown } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -123,12 +122,33 @@ export default function DashboardAdmin({ onLogout }) {
     setLoading(false);
   }
 
-  // Upload d'une photo vers Firebase Storage — retourne l'URL publique ou '' si pas de fichier
-  async function uploadPhoto(file, folder) {
-    if (!file) return '';
-    const fileRef = storageRef(storage, `${folder}/${Date.now()}_${file.name}`);
-    await uploadBytes(fileRef, file);
-    return await getDownloadURL(fileRef);
+  // Redimensionne et compresse une image côté navigateur, puis la convertit en base64 —
+  // stockée directement dans Firestore (pas besoin de Storage / forfait payant).
+  function resizeAndConvertToBase64(file, maxSize = 300, quality = 0.6) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > height) {
+            if (width > maxSize) { height = Math.round(height * (maxSize / width)); width = maxSize; }
+          } else {
+            if (height > maxSize) { width = Math.round(width * (maxSize / height)); height = maxSize; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => reject(new Error("Impossible de lire l'image."));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error('Erreur de lecture du fichier.'));
+      reader.readAsDataURL(file);
+    });
   }
 
   async function ajouterArticle() {
@@ -140,9 +160,9 @@ export default function DashboardAdmin({ onLogout }) {
     if (newArt.photoFile) {
       setUploadingPhoto(true);
       try {
-        photoUrl = await uploadPhoto(newArt.photoFile, 'articles');
+        photoUrl = await resizeAndConvertToBase64(newArt.photoFile);
       } catch (e) {
-        alert('Erreur upload photo : ' + e.message);
+        alert('Erreur traitement photo : ' + e.message);
       }
       setUploadingPhoto(false);
     }
@@ -470,7 +490,7 @@ export default function DashboardAdmin({ onLogout }) {
               onChange={e => setNewArt({ ...newArt, photoFile: e.target.files[0] || null })}
             />
             <button style={{ ...baseStyles.btnNavy, opacity: (saving || uploadingPhoto) ? 0.6 : 1 }} onClick={ajouterArticle} disabled={saving || uploadingPhoto}>
-              <PlusCircle size={14} /> {uploadingPhoto ? 'Envoi photo…' : saving ? 'Enregistrement…' : "Ajouter l'article"}
+              <PlusCircle size={14} /> {uploadingPhoto ? 'Traitement photo…' : saving ? 'Enregistrement…' : "Ajouter l'article"}
             </button>
           </div>
         </div>
