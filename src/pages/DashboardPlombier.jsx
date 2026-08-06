@@ -375,10 +375,12 @@ export default function DashboardPlombier({ onLogout }) {
   };
 
   // Étape 2 : validation du mot de passe saisi contre celui stocké sur le profil
+  // → on entre DIRECTEMENT dans le dashboard, sans attendre un rechargement Firestore
   const handlePasswordSubmit = () => {
     if (!pendingPlombier) return;
     if (pwdInput === pendingPlombier.motDePasse) {
       localStorage.setItem('plombierId', pendingPlombier.id);
+      setPlombier(pendingPlombier);
       setSelectedPlombierId(pendingPlombier.id);
       setPendingPlombier(null);
       setPwdInput('');
