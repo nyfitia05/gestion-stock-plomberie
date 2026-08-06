@@ -99,7 +99,7 @@ const ADMIN_PASSWORD = 'Lucioles535*';
                 Aucun plombier trouvé.<br />L'admin doit d'abord ajouter des plombiers.
               </div>
             ) : plombiers.map(p => (
-              <button key={p.id} onClick={() => { setPlombierChoisi(p); setRole('plombier'); }} style={{
+              <button key={p.id} onClick={() => { setPlombierChoisi(p); setEtape('login-plombier'); setPasswordInput(''); setLoginError(''); }} style={{
                 width: '100%', padding: '14px 16px', marginBottom: '8px',
                 background: '#f8fafc', color: NAVY, border: '1.5px solid #e2e8f0',
                 borderRadius: '12px', cursor: 'pointer', textAlign: 'left',
@@ -167,6 +167,55 @@ const ADMIN_PASSWORD = 'Lucioles535*';
     </button>
   </>
 )}
+
+        {etape === 'login-plombier' && (
+          <>
+            <h1 style={{ fontSize: '18px', fontWeight: '700', color: NAVY, margin: '0 0 6px' }}>Bonjour {plombierChoisi?.nom}</h1>
+            <p style={{ fontSize: '13px', color: '#7a8a9a', margin: '0 0 24px' }}>Entrez votre mot de passe</p>
+
+            <input
+              type="password"
+              placeholder="Mot de passe"
+              value={passwordInput}
+              onChange={e => { setPasswordInput(e.target.value); setLoginError(''); }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  if (passwordInput === plombierChoisi?.motDePasse) { setRole('plombier'); }
+                  else { setLoginError('Mot de passe incorrect.'); }
+                }
+              }}
+              style={{
+                width: '100%', padding: '12px 14px', borderRadius: '12px',
+                border: `1.5px solid ${loginError ? '#dc2626' : '#e2e8f0'}`,
+                fontSize: '14px', marginBottom: '8px', boxSizing: 'border-box', outline: 'none',
+              }}
+              autoFocus
+            />
+
+            {loginError && (
+              <p style={{ color: '#dc2626', fontSize: '12px', margin: '0 0 12px' }}>{loginError}</p>
+            )}
+
+            <button
+              onClick={() => {
+                if (passwordInput === plombierChoisi?.motDePasse) { setRole('plombier'); }
+                else { setLoginError('Mot de passe incorrect.'); }
+              }}
+              style={{
+                width: '100%', padding: '12px', background: NAVY, color: '#fff',
+                border: 'none', borderRadius: '12px', fontSize: '14px',
+                fontWeight: '600', cursor: 'pointer', marginBottom: '10px',
+              }}
+            >
+              Connexion
+            </button>
+
+            <button onClick={() => { setEtape('choix-plombier'); setPlombierChoisi(null); setPasswordInput(''); setLoginError(''); }}
+              style={{ background: 'none', border: 'none', color: '#7a8a9a', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}>
+              ← Retour
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
