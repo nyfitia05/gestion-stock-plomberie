@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, getDoc, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Package, TrendingDown, PlusCircle, AlertTriangle, LogOut, Users, LogIn, Edit, Trash2, Save, X } from 'lucide-react';
+import { Package, TrendingDown, PlusCircle, AlertTriangle, LogOut, Users, LogIn, Edit, Trash2, Save, X, Lock } from 'lucide-react';
 
 // ----- COULEURS -----
 const NAVY = '#1a3a5c';
@@ -173,6 +173,17 @@ const s = {
   },
   iconBtn: { background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center' },
   editRow: { display: 'flex', gap: '8px', alignItems: 'center' },
+  photoThumb: { width: '34px', height: '34px', objectFit: 'cover', borderRadius: '8px', border: `1px solid ${BORDER}` },
+  photoPlaceholder: { width: '34px', height: '34px', borderRadius: '8px', background: '#f0f4f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED, fontSize: '10px' },
+  passwordOverlay: {
+    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+    background: 'rgba(26,58,92,0.45)', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', zIndex: 2000, padding: '20px',
+  },
+  passwordCard: {
+    background: '#fff', borderRadius: '20px', padding: '28px 26px',
+    maxWidth: '360px', width: '100%', boxShadow: '0 12px 40px rgba(0,0,0,0.2)',
+  },
 };
 
 export default function DashboardPlombier({ onLogout }) {
@@ -191,6 +202,11 @@ export default function DashboardPlombier({ onLogout }) {
   const [editQuantite, setEditQuantite] = useState('');
   const [editChantier, setEditChantier] = useState('');
   const [initializing, setInitializing] = useState(true);
+
+  // ── Gate mot de passe ──
+  const [pendingPlombier, setPendingPlombier] = useState(null); // plombier en attente de saisie du mdp
+  const [pwdInput, setPwdInput] = useState('');
+  const [pwdError, setPwdError] = useState('');
 
   // Charger l'ID depuis localStorage au montage
   useEffect(() => {
@@ -351,10 +367,25 @@ export default function DashboardPlombier({ onLogout }) {
     }
   };
 
-  const handleSelectPlombier = (id) => {
-    localStorage.setItem('plombierId', id);
-    setSelectedPlombierId(id);
-    setError('');
+  // Étape 1 : clic sur un nom → ouvre le gate mot de passe (ne connecte PAS directement)
+  const handlePlombierClick = (p) => {
+    setPendingPlombier(p);
+    setPwdInput('');
+    setPwdError('');
+  };
+
+  // Étape 2 : validation du mot de passe saisi contre celui stocké sur le profil
+  const handlePasswordSubmit = () => {
+    if (!pendingPlombier) return;
+    if (pwdInput === pendingPlombier.motDePasse) {
+      localStorage.setItem('plombierId', pendingPlombier.id);
+      setSelectedPlombierId(pendingPlombier.id);
+      setPendingPlombier(null);
+      setPwdInput('');
+      setError('');
+    } else {
+      setPwdError('Mot de passe incorrect.');
+    }
   };
 
   const handleLogoutClick = () => {
@@ -371,7 +402,7 @@ export default function DashboardPlombier({ onLogout }) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: BG }}>Chargement...</div>;
   }
 
-  // Écran de sélection des plombiers (si aucun ID stocké)
+  // Écran de sélection des plombiers (si aucun ID stocké) + gate mot de passe
   if (!selectedPlombierId) {
     return (
       <div style={s.selectorContainer}>
@@ -379,7 +410,7 @@ export default function DashboardPlombier({ onLogout }) {
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
             <img src="https://sosfuitedeau.com/wp-content/uploads/2026/04/logo-removebg-preview.png" alt="Logo" style={{ height: '50px', marginBottom: '16px' }} />
             <h2 style={{ fontSize: '20px', fontWeight: '600', margin: '0 0 6px', color: '#1a2332' }}>Choisissez votre profil</h2>
-            <p style={{ fontSize: '13px', color: '#7a8a9a', margin: 0 }}>Sélectionnez votre nom pour accéder à votre espace</p>
+            <p style={{ fontSize: '13px', color: '#7a8a9a', margin: 0 }}>Sélectionnez votre nom, puis entrez votre mot de passe</p>
           </div>
           {loadingList ? (
             <div style={{ textAlign: 'center', padding: '20px', color: NAVY }}>Chargement des plombiers...</div>
@@ -392,7 +423,7 @@ export default function DashboardPlombier({ onLogout }) {
               {plombiersList.map(p => (
                 <button
                   key={p.id}
-                  onClick={() => handleSelectPlombier(p.id)}
+                  onClick={() => handlePlombierClick(p)}
                   style={s.selectorButton}
                   onMouseEnter={(e) => e.currentTarget.style.borderColor = NAVY}
                   onMouseLeave={(e) => e.currentTarget.style.borderColor = BORDER}
@@ -413,12 +444,49 @@ export default function DashboardPlombier({ onLogout }) {
                     <div style={{ fontWeight: '600', fontSize: '16px', color: '#1a2332' }}>{p.nom}</div>
                     <div style={{ fontSize: '12px', color: '#7a8a9a' }}>{p.email}</div>
                   </div>
-                  <LogIn size={18} color={NAVY} />
+                  <Lock size={16} color={MUTED} />
                 </button>
               ))}
             </div>
           )}
         </div>
+
+        {pendingPlombier && (
+          <div style={s.passwordOverlay} onClick={() => setPendingPlombier(null)}>
+            <div style={s.passwordCard} onClick={e => e.stopPropagation()}>
+              <div style={{ textAlign: 'center', marginBottom: '18px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#e8f0f8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                  <Lock size={22} color={NAVY} />
+                </div>
+                <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1a2332', margin: '0 0 4px' }}>{pendingPlombier.nom}</h3>
+                <p style={{ fontSize: '12px', color: MUTED, margin: 0 }}>Entrez votre mot de passe pour continuer</p>
+              </div>
+              <input
+                type="password"
+                autoFocus
+                value={pwdInput}
+                onChange={e => { setPwdInput(e.target.value); setPwdError(''); }}
+                onKeyDown={e => { if (e.key === 'Enter') handlePasswordSubmit(); }}
+                placeholder="Mot de passe"
+                style={{
+                  width: '100%', padding: '12px 14px', borderRadius: '12px',
+                  border: `1.5px solid ${pwdError ? DANGER : BORDER}`,
+                  fontSize: '14px', marginBottom: '8px', boxSizing: 'border-box', outline: 'none',
+                }}
+              />
+              {pwdError && <p style={{ color: DANGER, fontSize: '12px', margin: '0 0 12px' }}>{pwdError}</p>}
+              <button onClick={handlePasswordSubmit} style={{ ...s.btnPrimary, marginBottom: '10px' }}>
+                <LogIn size={15} /> Continuer
+              </button>
+              <button
+                onClick={() => setPendingPlombier(null)}
+                style={{ background: 'none', border: 'none', color: MUTED, fontSize: '13px', cursor: 'pointer', textDecoration: 'underline', width: '100%' }}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -583,7 +651,7 @@ export default function DashboardPlombier({ onLogout }) {
             <div style={s.tableWrapper}>
               <table style={s.table}>
                 <thead>
-                  <tr><th style={s.th}>Article</th><th style={s.th}>Réf</th><th style={s.th}>Stock</th><th style={s.th}>Unité</th><th style={s.th}>Statut</th></tr>
+                  <tr><th style={s.th}>Photo</th><th style={s.th}>Article</th><th style={s.th}>Réf</th><th style={s.th}>Stock</th><th style={s.th}>Unité</th><th style={s.th}>Statut</th></tr>
                 </thead>
                 <tbody>
                   {articles.map(a => {
@@ -591,6 +659,11 @@ export default function DashboardPlombier({ onLogout }) {
                     const label = { ok: 'OK', mid: 'Moyen', low: 'Stock bas' }[type];
                     return (
                       <tr key={a.id}>
+                        <td style={s.td}>
+                          {a.photoUrl
+                            ? <img src={a.photoUrl} alt={a.nom} style={s.photoThumb} />
+                            : <div style={s.photoPlaceholder}>—</div>}
+                        </td>
                         <td style={{ ...s.td, fontWeight: '500' }}>{a.nom}</td>
                         <td style={s.td}>{a.reference || '—'}</td>
                         <td style={{ ...s.td, fontWeight: '700', color: type === 'low' ? DANGER : '#1a2332' }}>{a.quantite_stock}</td>
